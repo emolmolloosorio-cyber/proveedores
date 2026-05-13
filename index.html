@@ -213,6 +213,15 @@ main { padding-bottom: calc(var(--nav-h) + 8px); min-height: 100dvh; }
     <div class="search-wrap"><input class="search-input" type="search" placeholder="Buscar proveedor..." id="searchHist" oninput="renderHistorial()"></div>
     <div class="list" id="listHistorial"></div>
   </section>
+  <section class="section" id="sec-reportes">
+    <div class="page-header"><h2>Reportes</h2></div>
+    <div style="padding:0 20px 8px;display:flex;gap:8px">
+      <button class="btn btn-sm" id="rBtn30" onclick="setReportePeriodo(30,this)" style="background:var(--accent-bg);color:var(--accent-text);border-radius:20px;border:none">30 días</button>
+      <button class="btn btn-sm" id="rBtn60" onclick="setReportePeriodo(60,this)" style="background:var(--bg2);color:var(--text2);border-radius:20px;border:1px solid var(--border)">60 días</button>
+      <button class="btn btn-sm" id="rBtn90" onclick="setReportePeriodo(90,this)" style="background:var(--bg2);color:var(--text2);border-radius:20px;border:1px solid var(--border)">90 días</button>
+    </div>
+    <div id="reportesContent" style="padding:0 20px 100px"></div>
+  </section>
 </main>
 
 <nav>
@@ -231,6 +240,10 @@ main { padding-bottom: calc(var(--nav-h) + 8px); min-height: 100dvh; }
   <button class="nav-btn" onclick="goSection('historial',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><polyline points="3 16 3 11 8 11"/></svg>
     Historial
+  </button>
+  <button class="nav-btn" onclick="goSection('reportes',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Reportes
   </button>
 </nav>
 
@@ -341,6 +354,7 @@ function goSection(name,btn){
   if(name==='hoy')renderHoy();
   if(name==='pedidos')renderPedidos();
   if(name==='historial')renderHistorial();
+  if(name==='reportes')renderReportes();
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
@@ -598,17 +612,89 @@ function updateOrderProv(provId){
 function buildOrderItems(p, existingItems=[]){
   const cat=[...(p.catalogo||[])].sort((a,b)=>(b.totalQty||0)-(a.totalQty||0));
   if(!cat.length) return `<div style="padding:20px;color:var(--text3);font-size:14px;text-align:center">Sin productos en catálogo aún. Agrega uno abajo.</div>`;
-  return `<div style="padding:8px 20px 0">`+cat.map(prod=>{
+  const rows=cat.map(prod=>{
     const lm=getLastMonthQty(p.id,prod.id);
     const ex=existingItems.find(i=>i.prodId===prod.id);
-    return`<div class="order-product">
-      <div class="order-info"><div class="order-name">${prod.nombre}</div><div class="order-meta">S/. ${parseFloat(prod.precio||0).toFixed(2)} / ${prod.unidad}${lm>0?` · ${lm} últ. mes`:''}</div></div>
-      <input class="qty-input" type="number" min="0" step="1" placeholder="0" value="${ex?.qty||''}" data-prodid="${prod.id}" data-nombre="${prod.nombre}" data-unidad="${prod.unidad}" data-precio="${prod.precio||0}" oninput="renderOrderTotal();renderOrderSummary()">
-    </div>`;}).join('')+`</div>`;
+    const avgPrice=getPriceHistory(p.id,prod.id);
+    const precioActual=parseFloat(prod.precio||0);
+    let priceHint='';
+    if(avgPrice>0&&precioActual>0){
+      const diff=((precioActual-avgPrice)/avgPrice*100);
+      if(Math.abs(diff)>=2) priceHint=`<span style="color:${diff>0?'#c0392b':'#27ae60'};font-size:11px;font-weight:700;margin-left:4px">${diff>0?'▲':'▼'}${Math.abs(diff).toFixed(0)}%</span>`;
+    }
+    const exPrecio=ex?.precio||precioActual;
+    return`<div class="order-product order-prod-row" data-nombre="${prod.nombre.toLowerCase()}" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="order-info" style="flex:1">
+          <div class="order-name">${prod.nombre}</div>
+          <div class="order-meta" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+            ${priceHint}
+            ${lm>0?`<span style="color:var(--text3)">${lm} últ. mes</span>`:''}
+            ${avgPrice>0?`<span style="color:var(--text3)">prom. S/.${avgPrice.toFixed(2)}</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Precio S/.</div>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);pointer-events:none">S/.</span>
+            <input class="form-input precio-input" type="number" step="0.01" min="0" placeholder="0.00"
+              value="${exPrecio>0?exPrecio.toFixed(2):''}"
+              data-prodid="${prod.id}"
+              oninput="syncPrecio(this);renderOrderTotal();renderOrderSummary()"
+              style="padding:8px 8px 8px 30px;font-size:14px">
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Cantidad</div>
+          <input class="form-input qty-input" type="number" min="0" step="1" placeholder="0"
+            value="${ex?.qty||''}"
+            data-prodid="${prod.id}" data-nombre="${prod.nombre}" data-unidad="${prod.unidad}" data-precio="${exPrecio||precioActual}"
+            oninput="renderOrderTotal();renderOrderSummary()"
+            style="padding:8px;text-align:center;font-size:14px">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="padding:8px 20px 0">
+    <div style="position:relative;margin-bottom:8px">
+      <input class="form-input" id="orderSearchInput" type="search" placeholder="Buscar producto..." oninput="filterOrderProducts(this.value)" style="padding-left:36px;background:var(--bg2)">
+      <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function filterOrderProducts(q){
+  const term=q.toLowerCase().trim();
+  document.querySelectorAll('.order-prod-row').forEach(row=>{
+    row.style.display=(!term||row.dataset.nombre.includes(term))?'':'none';
+  });
+}
+
+function getPriceHistory(provId,prodId){
+  const precios=DB.historial
+    .filter(h=>h.proveedorId===provId)
+    .sort((a,b)=>b.fecha-a.fecha)
+    .slice(0,6)
+    .map(h=>{const i=h.items.find(x=>x.prodId===prodId);return i?.precio||null;})
+    .filter(x=>x!==null&&x>0);
+  if(!precios.length)return 0;
+  return precios.reduce((s,p)=>s+p,0)/precios.length;
+}
+
+function syncPrecio(precioInp){
+  const prodId=precioInp.dataset.prodid;
+  const qtyInp=document.querySelector(`.qty-input[data-prodid="${prodId}"]`);
+  if(qtyInp) qtyInp.dataset.precio=precioInp.value||0;
 }
 
 function renderOrderTotal(){
-  let t=0;document.querySelectorAll('.qty-input').forEach(inp=>{t+=(parseFloat(inp.value)||0)*parseFloat(inp.dataset.precio||0);});
+  let t=0;
+  document.querySelectorAll('.qty-input').forEach(inp=>{
+    t+=(parseFloat(inp.value)||0)*parseFloat(inp.dataset.precio||0);
+  });
   const el=document.getElementById('orderTotal');if(el)el.textContent='S/. '+t.toFixed(2);
 }
 
@@ -744,7 +830,10 @@ function saveOrder(estado,provId){
   const p=DB.proveedores.find(x=>x.id===provId);
   const items=[];
   document.querySelectorAll('.qty-input').forEach(inp=>{
-    items.push({prodId:inp.dataset.prodid,nombre:inp.dataset.nombre||'',unidad:inp.dataset.unidad||'',precio:parseFloat(inp.dataset.precio),qty:parseFloat(inp.value)||0});
+    // Use the price-input value if available, fallback to data-precio
+    const precioInp=document.querySelector(`.precio-input[data-prodid="${inp.dataset.prodid}"]`);
+    const precio=precioInp?parseFloat(precioInp.value)||0:parseFloat(inp.dataset.precio)||0;
+    items.push({prodId:inp.dataset.prodid,nombre:inp.dataset.nombre||'',unidad:inp.dataset.unidad||'',precio,qty:parseFloat(inp.value)||0});
   });
   if(!items.some(i=>i.qty>0)){toast('Agrega al menos una cantidad');return;}
   if(currentOrderId){Object.assign(DB.pedidos.find(x=>x.id===currentOrderId),{items,estado,fecha:Date.now()});}
@@ -918,6 +1007,89 @@ function deleteHist(histId){
 function getLastMonthQty(provId,prodId){
   const ago=Date.now()-30*24*60*60*1000;
   return DB.historial.filter(h=>h.proveedorId===provId&&h.fecha>=ago).reduce((s,h)=>{const i=h.items.find(x=>x.prodId===prodId);return s+(i?.qty||0);},0);
+}
+
+// REPORTES
+let _reporteDias = 30;
+function setReportePeriodo(dias, btn){
+  _reporteDias = dias;
+  document.querySelectorAll('[id^=rBtn]').forEach(b=>{
+    b.style.background='var(--bg2)';b.style.color='var(--text2)';b.style.border='1px solid var(--border)';
+  });
+  btn.style.background='var(--accent-bg)';btn.style.color='var(--accent-text)';btn.style.border='none';
+  renderReportes();
+}
+
+function renderReportes(){
+  const el=document.getElementById('reportesContent');if(!el)return;
+  const desde=Date.now()-_reporteDias*24*60*60*1000;
+  const compras=DB.historial.filter(h=>h.fecha>=desde);
+
+  if(!compras.length){
+    el.innerHTML=`<div class="empty-state" style="margin-top:40px"><div class="empty-icon">📊</div><div class="empty-text">Sin compras en los últimos ${_reporteDias} días.</div></div>`;
+    return;
+  }
+
+  // Gasto por proveedor
+  const porProv={};
+  compras.forEach(h=>{
+    if(!porProv[h.proveedorId])porProv[h.proveedorId]={total:0,compras:0};
+    porProv[h.proveedorId].total+=h.total||0;
+    porProv[h.proveedorId].compras++;
+  });
+  const totalGeneral=Object.values(porProv).reduce((s,v)=>s+v.total,0);
+  const provRank=Object.entries(porProv).sort((a,b)=>b[1].total-a[1].total);
+
+  // Productos más comprados
+  const porProd={};
+  compras.forEach(h=>{
+    h.items.filter(i=>i.qty>0).forEach(i=>{
+      if(!porProd[i.nombre])porProd[i.nombre]={qty:0,gasto:0,unidad:i.unidad};
+      porProd[i.nombre].qty+=i.qty;
+      porProd[i.nombre].gasto+=i.qty*i.precio;
+    });
+  });
+  const prodRank=Object.entries(porProd).sort((a,b)=>b[1].gasto-a[1].gasto).slice(0,8);
+
+  el.innerHTML=`
+    <!-- Resumen total -->
+    <div style="background:var(--accent-bg);color:var(--accent-text);border-radius:16px;padding:20px;margin-bottom:20px">
+      <div style="font-size:12px;opacity:0.7;margin-bottom:4px">GASTO TOTAL — ÚLTIMOS ${_reporteDias} DÍAS</div>
+      <div style="font-size:36px;font-weight:700;font-family:'Geist Mono',monospace">S/. ${totalGeneral.toFixed(2)}</div>
+      <div style="font-size:13px;opacity:0.6;margin-top:4px">${compras.length} compra${compras.length!==1?'s':''} · ${provRank.length} proveedor${provRank.length!==1?'es':''}</div>
+    </div>
+
+    <!-- Por proveedor -->
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;margin-bottom:12px">Gasto por proveedor</div>
+    ${provRank.map(([provId,data])=>{
+      const prov=DB.proveedores.find(x=>x.id===provId);
+      const pct=totalGeneral>0?(data.total/totalGeneral*100):0;
+      return`<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <div style="font-weight:600;font-size:14px">${prov?.nombre||'Proveedor'}</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:14px">S/. ${data.total.toFixed(2)}</div>
+        </div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--accent-bg);border-radius:3px;transition:width 0.4s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">${data.compras} compra${data.compras!==1?'s':''} · ${pct.toFixed(0)}% del gasto</div>
+      </div>`;
+    }).join('')}
+
+    <!-- Productos más comprados -->
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;margin:20px 0 12px">Productos más comprados</div>
+    ${prodRank.map(([nombre,data],i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text3);flex-shrink:0">${i+1}</div>
+          <div>
+            <div style="font-weight:600;font-size:14px">${nombre}</div>
+            <div style="font-size:12px;color:var(--text3)">${data.qty} ${data.unidad}</div>
+          </div>
+        </div>
+        <div style="font-family:'Geist Mono',monospace;font-size:14px;font-weight:600">S/. ${data.gasto.toFixed(2)}</div>
+      </div>`).join('')}
+  `;
 }
 
 document.querySelectorAll('.overlay').forEach(o=>{
