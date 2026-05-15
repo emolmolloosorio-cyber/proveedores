@@ -611,7 +611,7 @@ function syncTotal(inp){
   const pi=document.querySelector(`.precio-input[data-prodid="${id}"]`);
   const qi=document.querySelector(`.qty-input[data-prodid="${id}"]`);
   const p=parseFloat(pi?.value)||0;const q=parseFloat(qi?.value)||0;
-  if(p>0&&tot>0){const nq=Math.round(tot/p);if(qi){qi.value=nq;qi.dataset.precio=p;}}
+  if(p>0&&tot>0){const nq=parseFloat((tot/p).toFixed(2));if(qi){qi.value=nq;qi.dataset.precio=p;}}
   else if(q>0&&tot>0){const np=tot/q;if(pi)pi.value=np.toFixed(2);if(qi)qi.dataset.precio=np;}
   renderOrderTotal();renderOrderSummary();
 }
@@ -763,8 +763,9 @@ function renderHistorial(){
   const q=document.getElementById('searchHist').value.toLowerCase();
   const dv=document.getElementById('histDesde').value;
   const hv=document.getElementById('histHasta').value;
-  const desde=dv?new Date(dv).getTime():null;
-  const hasta=hv?new Date(hv+'T23:59:59').getTime():null;
+  const parseLocalDate=(s,endOfDay)=>{const[y,m,d]=s.split('-').map(Number);return endOfDay?new Date(y,m-1,d,23,59,59).getTime():new Date(y,m-1,d,0,0,0).getTime();};
+  const desde=dv?parseLocalDate(dv,false):null;
+  const hasta=hv?parseLocalDate(hv,true):null;
   let list=[...DB.historial].sort((a,b)=>b.fecha-a.fecha).filter(h=>{
     const p=DB.proveedores.find(x=>x.id===h.proveedorId);
     return(!q||(p?.nombre||'').toLowerCase().includes(q))&&(!desde||h.fecha>=desde)&&(!hasta||h.fecha<=hasta);
