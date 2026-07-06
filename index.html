@@ -1,510 +1,304 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Proveedores</title>
-    <style>
-        :root {
-            --color-primario: #1a73e8;
-            --color-primario-hover: #1557b0;
-            --color-eliminar: #dc3545;
-            --color-eliminar-hover: #b02a37;
-            --color-editar: #ffc107;
-            --color-editar-hover: #d4a000;
-            --color-fondo: #f5f5f5;
-            --color-blanco: #ffffff;
-            --color-texto: #333333;
-            --color-borde: #dddddd;
-            --sombra: 0 2px 8px rgba(0, 0, 0, 0.1);
-            --border-radius: 8px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--color-fondo);
-            color: var(--color-texto);
-            line-height: 1.6;
-            padding: 20px;
-        }
-
-        .contenedor {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            font-size: 28px;
-            color: var(--color-primario);
-        }
-
-        .formulario-contenedor {
-            background-color: var(--color-blanco);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--sombra);
-            margin-bottom: 25px;
-        }
-
-        .formulario-contenedor h2 {
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-
-        .form-grupo {
-            margin-bottom: 15px;
-        }
-
-        .form-grupo label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .form-grupo input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--color-borde);
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.2s;
-        }
-
-        .form-grupo input:focus {
-            outline: none;
-            border-color: var(--color-primario);
-        }
-
-        .btn-guardar {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--color-primario);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .btn-guardar:hover {
-            background-color: var(--color-primario-hover);
-        }
-
-        .acciones-barra {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .buscar-input {
-            flex: 2;
-            min-width: 200px;
-            padding: 10px 12px;
-            border: 1px solid var(--color-borde);
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .buscar-input:focus {
-            outline: none;
-            border-color: var(--color-primario);
-        }
-
-        .btn-accion {
-            flex: 1;
-            min-width: 120px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-accion:hover {
-            opacity: 0.9;
-        }
-
-        .btn-exportar {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .btn-importar {
-            background-color: #2196F3;
-            color: white;
-        }
-
-        .lista-proveedores {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .proveedor-card {
-            background-color: var(--color-blanco);
-            padding: 18px 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--sombra);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .proveedor-info h3 {
-            margin-bottom: 4px;
-        }
-
-        .proveedor-info p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .proveedor-acciones {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-editar,
-        .btn-eliminar {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-editar {
-            background-color: var(--color-editar);
-            color: #333;
-        }
-
-        .btn-editar:hover {
-            background-color: var(--color-editar-hover);
-        }
-
-        .btn-eliminar {
-            background-color: var(--color-eliminar);
-            color: white;
-        }
-
-        .btn-eliminar:hover {
-            background-color: var(--color-eliminar-hover);
-        }
-
-        .sin-resultados {
-            text-align: center;
-            color: #888;
-            padding: 30px;
-        }
-
-        @media (max-width: 600px) {
-            .proveedor-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .proveedor-acciones {
-                width: 100%;
-            }
-
-            .btn-editar,
-            .btn-eliminar {
-                flex: 1;
-                text-align: center;
-            }
-
-            .acciones-barra {
-                flex-direction: column;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mi Bodega</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ffffff;--bg2:#f7f7f6;--bg3:#f0efed;--border:#e5e4e1;--border2:#d4d3cf;--text:#1a1917;--text2:#6b6a67;--text3:#a8a7a3;--accent-bg:#1a1917;--accent-text:#ffffff;--danger:#c0392b;--danger-bg:#fdf2f2;--success:#27ae60;--nav-h:60px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:15px;min-height:100dvh;overflow-x:hidden;}
+nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(255,255,255,0.94);backdrop-filter:blur(14px);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--text3);font-family:'Instrument Sans',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.3px;cursor:pointer;transition:color 0.15s;}
+.nav-btn.active{color:var(--text);}
+.nav-btn svg{width:20px;height:20px;stroke-width:1.75;}
+main{padding-bottom:calc(var(--nav-h) + 8px);min-height:100dvh;}
+.section{display:none;}.section.active{display:block;}
+.page-header{padding:52px 20px 14px;position:sticky;top:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(14px);z-index:10;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;}
+.page-header h2{font-size:26px;font-weight:700;letter-spacing:-0.5px;}
+.search-wrap{padding:12px 20px 4px;}
+.search-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:15px;outline:none;transition:border-color 0.15s;}
+.search-input::placeholder{color:var(--text3);}.search-input:focus{border-color:var(--border2);}
+.list{padding:8px 20px;display:flex;flex-direction:column;}
+.card{background:var(--bg);padding:14px 4px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background 0.1s;}
+.card:first-child{border-top:1px solid var(--border);}.card:active{background:var(--bg2);}
+.card-body{flex:1;min-width:0;}.card-title{font-size:16px;font-weight:600;}
+.card-sub{font-size:13px;color:var(--text2);margin-top:3px;}
+.card-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;}
+.tag-visit{background:#e8f4fd;color:#1a6fa8;}.tag-delivery{background:#e8f7ef;color:#1a7a45;}.tag-count{background:var(--bg3);color:var(--text2);}
+.chevron{color:var(--text3);flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:10px;font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity 0.15s,transform 0.1s;}
+.btn:active{transform:scale(0.97);opacity:0.75;}
+.btn-primary{background:var(--accent-bg);color:var(--accent-text);}
+.btn-secondary{background:var(--bg2);color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #f5c6c3;}
+.btn-ghost{background:none;color:var(--text2);padding:8px;border:none;}
+.btn-full{width:100%;}.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px;}
+.fab{position:fixed;bottom:calc(var(--nav-h) + 14px);right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent-bg);color:var(--accent-text);font-size:24px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.18);z-index:50;transition:transform 0.15s;}
+.fab:active{transform:scale(0.92);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:200;align-items:flex-end;}
+.overlay.open{display:flex;}
+.sheet{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-height:93dvh;overflow-y:auto;padding-bottom:32px;animation:slideUp 0.22s ease;display:flex;flex-direction:column;}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 0;flex-shrink:0;}
+.sheet-header{padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5;flex-shrink:0;}
+.sheet-title{font-size:18px;font-weight:700;letter-spacing:-0.3px;}
+.sheet-body{padding:20px;}
+.form-group{margin-bottom:18px;}
+.form-label{font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:7px;display:block;}
+.form-input,.form-textarea,.form-select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:15px;outline:none;transition:border-color 0.15s;}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--border2);background:var(--bg);}
+.form-textarea{resize:none;min-height:80px;line-height:1.5;}
+.form-select{appearance:none;}
+.days-picker{display:flex;gap:7px;flex-wrap:wrap;}
+.day-chip{padding:7px 12px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.12s;user-select:none;}
+.day-chip.selected{background:var(--text);color:#fff;border-color:var(--text);}
+.detail-header{padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;}
+.back-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:2px;flex-shrink:0;margin-top:3px;}
+.detail-info{flex:1;}.detail-name{font-size:22px;font-weight:700;letter-spacing:-0.4px;line-height:1.15;}
+.detail-phone{color:var(--text2);font-size:14px;margin-top:4px;}
+.detail-section{padding:16px 20px;border-bottom:1px solid var(--border);}
+.detail-section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;margin-bottom:12px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;}
+.info-label{color:var(--text2);font-size:14px;}.info-value{font-size:14px;font-weight:500;text-align:right;max-width:60%;}
+.obs-box{background:var(--bg2);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--text2);line-height:1.6;}
+.product-item{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;}
+.product-item:last-child{border-bottom:none;}
+.product-info{flex:1;min-width:0;}.product-name{font-weight:600;font-size:15px;}
+.product-unit{font-size:12px;color:var(--text3);margin-top:2px;}
+.product-price{font-family:'Geist Mono',monospace;font-size:15px;color:var(--text);white-space:nowrap;}
+.product-actions{display:flex;gap:2px;}
+.order-product{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;}
+.order-product:last-child{border-bottom:none;}
+.order-info{flex:1;min-width:0;}.order-name{font-weight:600;font-size:14px;}
+.order-meta{font-size:12px;color:var(--text3);margin-top:2px;font-family:'Geist Mono',monospace;}
+.total-bar{position:sticky;bottom:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
+.total-label{color:var(--text2);font-size:13px;}
+.total-amount{font-family:'Geist Mono',monospace;font-size:22px;color:var(--text);}
+.day-tabs{display:flex;overflow-x:auto;gap:6px;padding:12px 20px;scrollbar-width:none;}
+.day-tabs::-webkit-scrollbar{display:none;}
+.day-tab{flex-shrink:0;padding:7px 14px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.12s;}
+.day-tab.active{background:var(--text);color:#fff;border-color:var(--text);}
+.day-block{padding:0 20px 16px;}
+.day-block-title{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;padding:14px 0 8px;}
+.hist-card{background:var(--bg);padding:14px 4px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;}
+.hist-card:first-child{border-top:1px solid var(--border);}.hist-card:active{background:var(--bg2);}
+.hist-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.hist-provider{font-size:16px;font-weight:600;}
+.hist-total{font-family:'Geist Mono',monospace;font-size:16px;color:var(--text);}
+.hist-date{font-size:12px;color:var(--text3);margin-top:3px;}
+.hist-items{font-size:13px;color:var(--text2);margin-top:6px;}
+.section-tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);}
+.section-tab{flex:1;padding:11px 0;text-align:center;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;}
+.section-tab.active{color:var(--text);border-bottom-color:var(--text);}
+.empty-state{text-align:center;padding:56px 20px;}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:0.4;}
+.empty-text{font-size:15px;line-height:1.6;color:var(--text2);}
+.price-wrap{position:relative;}
+.price-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-family:'Geist Mono',monospace;}
+.price-input{padding-left:36px!important;font-family:'Geist Mono',monospace!important;}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:500;z-index:999;transition:transform 0.25s ease;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.15);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:300;align-items:center;justify-content:center;padding:24px;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.1);}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+.confirm-text{color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.5;}
+.confirm-actions{display:flex;gap:10px;}.confirm-actions .btn{flex:1;}
+.no-data{color:var(--text3);font-size:14px;font-style:italic;padding:4px 0;}
+.money{font-family:'Geist Mono',monospace;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px;}
+.dash-card-title{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;margin-bottom:10px;}
+.dash-stat{font-size:32px;font-weight:700;font-family:'Geist Mono',monospace;letter-spacing:-1px;}
+.dash-sub{font-size:13px;color:var(--text2);margin-top:4px;}
+</style>
 </head>
 <body>
-    <div class="contenedor">
-        <header>
-            <h1>Gestión de Proveedores</h1>
-        </header>
-
-        <div class="formulario-contenedor">
-            <h2 id="titulo-formulario">Nuevo Proveedor</h2>
-            <form id="form-proveedor">
-                <div class="form-grupo">
-                    <label for="nombre">Nombre *</label>
-                    <input type="text" id="nombre" placeholder="Nombre del proveedor" required>
-                </div>
-                <div class="form-grupo">
-                    <label for="contacto">Persona de contacto</label>
-                    <input type="text" id="contacto" placeholder="Nombre de la persona">
-                </div>
-                <div class="form-grupo">
-                    <label for="telefono">Teléfono</label>
-                    <input type="text" id="telefono" placeholder="Número de teléfono">
-                </div>
-                <div class="form-grupo">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="Correo electrónico">
-                </div>
-                <button type="submit" class="btn-guardar" id="btn-guardar">Guardar Proveedor</button>
-            </form>
-        </div>
-
-        <div class="acciones-barra">
-            <input type="text" id="buscar-proveedor" class="buscar-input" placeholder="Buscar proveedor...">
-            <button type="button" id="btn-exportar" class="btn-accion btn-exportar">📥 Respaldo</button>
-            <button type="button" id="btn-importar" class="btn-accion btn-importar">📤 Restaurar</button>
-        </div>
-
-        <div id="lista-proveedores" class="lista-proveedores"></div>
+<div class="toast" id="toast"></div>
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle"></div>
+    <div class="confirm-text" id="confirmText"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOk">Eliminar</button>
     </div>
+  </div>
+</div>
+<main>
+  <section class="section active" id="sec-dashboard">
+    <div class="page-header">
+      <h2>Mi Bodega</h2>
+      <button class="btn btn-ghost btn-sm" onclick="openBudgetSettings()" style="color:var(--text3);font-size:12px">⚙ Presupuesto</button>
+    </div>
+    <div id="dashContent" style="padding:16px 20px 100px"></div>
+  </section>
+  <section class="section" id="sec-proveedores">
+    <div class="page-header"><h2>Proveedores</h2></div>
+    <div class="search-wrap"><input class="search-input" type="search" placeholder="Buscar..." id="searchProv" oninput="renderProveedores()"></div>
+    <div class="list" id="listProveedores"></div>
+    <button class="fab" onclick="openProvForm()">+</button>
+  </section>
+  <section class="section" id="sec-hoy">
+    <div class="page-header"><h2>Semana</h2></div>
+    <div class="day-tabs" id="dayTabs"></div>
+    <div id="hoyContent"></div>
+  </section>
+  <section class="section" id="sec-pedidos">
+    <div class="page-header"><h2>Pedidos</h2></div>
+    <div class="section-tabs">
+      <div class="section-tab active" onclick="switchPedidoTab('pendientes',this)">Pendientes</div>
+      <div class="section-tab" onclick="switchPedidoTab('borradores',this)">Borradores</div>
+    </div>
+    <div class="list" id="listPedidos" style="padding-top:12px"></div>
+    <button class="fab" onclick="openNewOrder()">+</button>
+  </section>
+  <section class="section" id="sec-historial">
+    <div class="page-header"><h2>Historial</h2></div>
+    <div style="padding:10px 20px 4px;display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Desde</div>
+        <input class="form-input" type="date" id="histDesde" oninput="renderHistorial()" style="padding:8px 10px;font-size:13px">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Hasta</div>
+        <input class="form-input" type="date" id="histHasta" oninput="renderHistorial()" style="padding:8px 10px;font-size:13px">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearHistFiltro()" style="padding:8px;color:var(--text3)">✕</button>
+    </div>
+    <div id="histTotalBanner" style="display:none;margin:4px 20px 0;background:var(--accent-bg);color:var(--accent-text);border-radius:10px;padding:10px 14px;font-size:13px"></div>
+    <div class="search-wrap"><input class="search-input" type="search" placeholder="Buscar proveedor..." id="searchHist" oninput="renderHistorial()"></div>
+    <div class="list" id="listHistorial"></div>
+  </section>
+  <section class="section" id="sec-reportes">
+    <div class="page-header"><h2>Reportes</h2></div>
+    <div style="padding:0 20px 8px;display:flex;gap:8px">
+      <button class="btn btn-sm" id="rBtn30" onclick="setReportePeriodo(30,this)" style="background:var(--accent-bg);color:var(--accent-text);border-radius:20px;border:none">30 días</button>
+      <button class="btn btn-sm" id="rBtn60" onclick="setReportePeriodo(60,this)" style="background:var(--bg2);color:var(--text2);border-radius:20px;border:1px solid var(--border)">60 días</button>
+      <button class="btn btn-sm" id="rBtn90" onclick="setReportePeriodo(90,this)" style="background:var(--bg2);color:var(--text2);border-radius:20px;border:1px solid var(--border)">90 días</button>
+    </div>
+    <div id="reportesContent" style="padding:0 20px 100px"></div>
+  </section>
+</main>
+<nav>
+  <button class="nav-btn active" onclick="goSection('dashboard',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Inicio
+  </button>
+  <button class="nav-btn" onclick="goSection('proveedores',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Proveedores
+  </button>
+  <button class="nav-btn" onclick="goSection('pedidos',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    Pedidos
+  </button>
+  <button class="nav-btn" onclick="goSection('historial',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><polyline points="3 16 3 11 8 11"/></svg>
+    Historial
+  </button>
+</nav>
+<!-- SHEETS -->
+<div class="overlay" id="overlayProvForm">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><span class="sheet-title" id="provFormTitle">Nuevo proveedor</span><button class="btn btn-ghost" onclick="closeSheet('overlayProvForm')">✕</button></div>
+    <div class="sheet-body">
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="fProvNombre" placeholder="Nombre del proveedor"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="fProvTel" type="tel" placeholder="999 999 999"></div>
+      <div class="form-group"><label class="form-label">Días de visita</label><div class="days-picker" id="dpVisita"></div></div>
+      <div class="form-group"><label class="form-label">Días de entrega</label><div class="days-picker" id="dpEntrega"></div></div>
+      <div class="form-group"><label class="form-label">Observaciones</label><textarea class="form-textarea" id="fProvObs" placeholder="Notas adicionales..."></textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveProveedor()">Guardar</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="overlayProvDetail"><div class="sheet" id="sheetProvDetail"></div></div>
+<div class="overlay" id="overlayCatForm">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><span class="sheet-title" id="catFormTitle">Producto</span><button class="btn btn-ghost" onclick="closeSheet('overlayCatForm')">✕</button></div>
+    <div class="sheet-body">
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="fProdNombre" placeholder="Ej: Inca Kola 1.5L"></div>
+      <div class="form-group"><label class="form-label">Unidad de medida</label>
+        <select class="form-select" id="fProdUnidad">
+          <option value="unidad">Unidad</option><option value="kg">Kilogramo (kg)</option><option value="g">Gramo (g)</option>
+          <option value="litro">Litro</option><option value="ml">Mililitro (ml)</option><option value="caja">Caja</option>
+          <option value="docena">Docena</option><option value="bolsa">Bolsa</option><option value="paquete">Paquete</option><option value="six">Six pack</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Último precio (S/.)</label>
+        <div class="price-wrap"><span class="price-prefix">S/.</span><input class="form-input price-input" id="fProdPrecio" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveProd()">Guardar producto</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="overlayOrder"><div class="sheet" id="sheetOrder" style="max-height:96dvh"></div></div>
+<div class="overlay" id="overlayOrderDetail"><div class="sheet" id="sheetOrderDetail"></div></div>
+<div class="overlay" id="overlayHistDetail"><div class="sheet" id="sheetHistDetail"></div></div>
+<div class="overlay" id="overlayBudget">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><span class="sheet-title">Presupuesto mensual</span><button class="btn btn-ghost" onclick="closeSheet('overlayBudget')">✕</button></div>
+    <div class="sheet-body">
+      <div style="font-size:14px;color:var(--text2);margin-bottom:20px">Define cuánto querés gastar por mes. Verás el progreso en el inicio.</div>
+      <div class="form-group"><label class="form-label">Presupuesto mensual (S/.)</label>
+        <div class="price-wrap"><span class="price-prefix">S/.</span><input class="form-input price-input" id="fBudget" type="number" step="1" min="0" placeholder="0"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveBudget()">Guardar</button>
+      <button class="btn btn-ghost btn-full" onclick="saveBudget(true)" style="margin-top:8px;color:var(--text3)">Quitar presupuesto</button>
+    </div>
+  </div>
+</div>
+<!-- FALTANTES SHEET -->
+<div class="overlay" id="overlayFaltantes">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><span class="sheet-title">📋 Faltantes</span><button class="btn btn-ghost" onclick="closeSheet('overlayFaltantes')">✕</button></div>
+    <div class="sheet-body">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Productos que te faltan en la bodega. Después asignas a un proveedor para armar el pedido.</div>
+      <div class="form-group"><label class="form-label">Producto *</label><input class="form-input" id="fFaltanteNombre" placeholder="¿Qué falta?"></div>
+      <div class="form-group"><label class="form-label">Cantidad (opcional)</label><input class="form-input" id="fFaltanteQty" placeholder="Ej: 5 kg, 3 unids..."></div>
+      <button class="btn btn-primary btn-full" onclick="addFaltante()">Agregar</button>
+      <div id="faltantesList" style="margin-top:20px"></div>
+    </div>
+  </div>
+</div>
+<!-- ASIGNAR PROVEEDOR SHEET -->
+<div class="overlay" id="overlayAsignarProv">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><span class="sheet-title">Asignar proveedor</span><button class="btn btn-ghost" onclick="closeSheet('overlayAsignarProv')">✕</button></div>
+    <div class="sheet-body" id="asignarProvBody"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+const DAYS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const DAYS_FULL=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const SUPABASE_URL='https://qvpswuskjtdopkmqhjoh.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2cHN3dXNranRkb3BrbXFoam9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjEwOTMsImV4cCI6MjA5MzI5NzA5M30.oQCVGQ8ypdUUfxk_Hc00_52hAl9dBjdiBGFyu6m3DDY';
+const sb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY);
+const DB_ROW_ID=1;
+let DB={proveedores:[],pedidos:[],historial:[],faltantes:[],config:{}};
+let _saveTimer=null;
+let _asignarFaltanteId=null;
 
-    <script>
-        let proveedores = [];
-        let proveedorEditandoId = null;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarProveedores();
-            mostrarProveedores();
-            configurarFormulario();
-            configurarBusqueda();
-            configurarBotonesRespaldo();
-        });
-
-        function cargarProveedores() {
-            const datos = localStorage.getItem('proveedores');
-            if (datos) {
-                proveedores = JSON.parse(datos);
-            }
-        }
-
-        function guardarProveedores() {
-            localStorage.setItem('proveedores', JSON.stringify(proveedores));
-        }
-
-        function generarId() {
-            return Date.now().toString(36) + Math.random().toString(36).substring(2);
-        }
-
-        function configurarFormulario() {
-            const form = document.getElementById('form-proveedor');
-            form.addEventListener('submit', manejarEnvioFormulario);
-        }
-
-        function manejarEnvioFormulario(evento) {
-            evento.preventDefault();
-
-            const nombre = document.getElementById('nombre').value.trim();
-            const contacto = document.getElementById('contacto').value.trim();
-            const telefono = document.getElementById('telefono').value.trim();
-            const email = document.getElementById('email').value.trim();
-
-            if (!nombre) {
-                alert('El nombre del proveedor es obligatorio.');
-                document.getElementById('nombre').focus();
-                return;
-            }
-
-            if (proveedorEditandoId) {
-                const proveedor = proveedores.find(p => p.id === proveedorEditandoId);
-                if (proveedor) {
-                    proveedor.nombre = nombre;
-                    proveedor.contacto = contacto;
-                    proveedor.telefono = telefono;
-                    proveedor.email = email;
-                }
-                proveedorEditandoId = null;
-                document.getElementById('btn-guardar').textContent = 'Guardar Proveedor';
-                document.getElementById('titulo-formulario').textContent = 'Nuevo Proveedor';
-            } else {
-                const nuevoProveedor = {
-                    id: generarId(),
-                    nombre: nombre,
-                    contacto: contacto,
-                    telefono: telefono,
-                    email: email,
-                    fechaRegistro: new Date().toISOString()
-                };
-                proveedores.push(nuevoProveedor);
-            }
-
-            guardarProveedores();
-            limpiarFormulario();
-            mostrarProveedores();
-        }
-
-        function mostrarProveedores(listaFiltrada = null) {
-            const lista = listaFiltrada || proveedores;
-            const contenedor = document.getElementById('lista-proveedores');
-
-            if (lista.length === 0) {
-                contenedor.innerHTML = '<p class="sin-resultados">No hay proveedores registrados.</p>';
-                return;
-            }
-
-            contenedor.innerHTML = '';
-
-            lista.forEach(proveedor => {
-                const tarjeta = document.createElement('div');
-                tarjeta.className = 'proveedor-card';
-                tarjeta.innerHTML = `
-                    <div class="proveedor-info">
-                        <h3>${escapeHtml(proveedor.nombre)}</h3>
-                        ${proveedor.contacto ? `<p><strong>Contacto:</strong> ${escapeHtml(proveedor.contacto)}</p>` : ''}
-                        ${proveedor.telefono ? `<p><strong>Teléfono:</strong> ${escapeHtml(proveedor.telefono)}</p>` : ''}
-                        ${proveedor.email ? `<p><strong>Email:</strong> ${escapeHtml(proveedor.email)}</p>` : ''}
-                    </div>
-                    <div class="proveedor-acciones">
-                        <button onclick="editarProveedor('${proveedor.id}')" class="btn-editar">Editar</button>
-                        <button onclick="eliminarProveedor('${proveedor.id}')" class="btn-eliminar">Eliminar</button>
-                    </div>
-                `;
-                contenedor.appendChild(tarjeta);
-            });
-        }
-
-        function escapeHtml(texto) {
-            const div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        function editarProveedor(id) {
-            const proveedor = proveedores.find(p => p.id === id);
-            if (!proveedor) return;
-
-            document.getElementById('nombre').value = proveedor.nombre;
-            document.getElementById('contacto').value = proveedor.contacto || '';
-            document.getElementById('telefono').value = proveedor.telefono || '';
-            document.getElementById('email').value = proveedor.email || '';
-
-            proveedorEditandoId = id;
-            document.getElementById('btn-guardar').textContent = 'Actualizar Proveedor';
-            document.getElementById('titulo-formulario').textContent = 'Editando Proveedor';
-
-            document.getElementById('form-proveedor').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function eliminarProveedor(id) {
-            const proveedor = proveedores.find(p => p.id === id);
-            if (!proveedor) return;
-
-            if (confirm(`¿Eliminar definitivamente a "${proveedor.nombre}"?`)) {
-                proveedores = proveedores.filter(p => p.id !== id);
-                guardarProveedores();
-
-                if (proveedorEditandoId === id) {
-                    limpiarFormulario();
-                }
-
-                mostrarProveedores();
-            }
-        }
-
-        function limpiarFormulario() {
-            document.getElementById('form-proveedor').reset();
-            proveedorEditandoId = null;
-            document.getElementById('btn-guardar').textContent = 'Guardar Proveedor';
-            document.getElementById('titulo-formulario').textContent = 'Nuevo Proveedor';
-        }
-
-        function configurarBusqueda() {
-            const campoBusqueda = document.getElementById('buscar-proveedor');
-            if (campoBusqueda) {
-                campoBusqueda.addEventListener('input', function () {
-                    const texto = this.value.toLowerCase().trim();
-
-                    if (texto === '') {
-                        mostrarProveedores();
-                        return;
-                    }
-
-                    const filtrados = proveedores.filter(p =>
-                        p.nombre.toLowerCase().includes(texto) ||
-                        (p.contacto && p.contacto.toLowerCase().includes(texto)) ||
-                        (p.email && p.email.toLowerCase().includes(texto)) ||
-                        (p.telefono && p.telefono.includes(texto))
-                    );
-
-                    mostrarProveedores(filtrados);
-                });
-            }
-        }
-
-        function configurarBotonesRespaldo() {
-            document.getElementById('btn-exportar').addEventListener('click', exportarDatos);
-            document.getElementById('btn-importar').addEventListener('click', importarDatos);
-        }
-
-        function exportarDatos() {
-            if (proveedores.length === 0) {
-                alert('No hay proveedores para respaldar.');
-                return;
-            }
-
-            const datos = JSON.stringify(proveedores, null, 2);
-            const blob = new Blob([datos], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const enlace = document.createElement('a');
-            enlace.href = url;
-            enlace.download = `proveedores-respaldo-${new Date().toISOString().split('T')[0]}.json`;
-            enlace.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importarDatos() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-
-            input.onchange = function (e) {
-                const archivo = e.target.files[0];
-                if (!archivo) return;
-
-                const lector = new FileReader();
-                lector.onload = function (evento) {
-                    try {
-                        const datosImportados = JSON.parse(evento.target.result);
-
-                        if (!Array.isArray(datosImportados)) {
-                            alert('El archivo no tiene un formato válido.');
-                            return;
-                        }
-
-                        if (confirm(`¿Restaurar ${datosImportados.length} proveedores? Esto reemplazará la lista actual.`)) {
-                            proveedores = datosImportados;
-                            guardarProveedores();
-                            limpiarFormulario();
-                            mostrarProveedores();
-                            alert('Proveedores restaurados correctamente.');
-                        }
-                    } catch (error) {
-                        alert('Error al leer el archivo. Asegúrate de que sea un JSON válido.');
-                    }
-                };
-                lector.readAsText(archivo);
-            };
-
-            input.click();
-        }
-    </script>
-</body>
-</html>
+function escapeHTML(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function escapeAttr(value){return escapeHTML(value).replace(/`/g,'&#96;');}
+function normalizeDB(data){
+  const next=(data&&typeof data==='object')?data:{};
+  next.proveedores=Array.isArray(next.proveedores)?next.proveedores:[];
+  next.pedidos=Array.isArray(next.pedidos)?next.pedidos:[];
+  next.historial=Array.isArray(next.historial)?next.historial:[];
+  next.faltantes=Array.isArray(next.faltantes)?next.faltantes:[];
+  next.config=(next.config&&typeof next.config==='object')?next.config:{};
+  next.proveed
