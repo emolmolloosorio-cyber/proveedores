@@ -115,6 +115,16 @@ main{padding-bottom:calc(var(--nav-h) + 8px);min-height:100dvh;}
 .dash-card-title{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);font-weight:700;margin-bottom:10px;}
 .dash-stat{font-size:32px;font-weight:700;font-family:'Geist Mono',monospace;letter-spacing:-1px;}
 .dash-sub{font-size:13px;color:var(--text2);margin-top:4px;}
+.autocomplete-wrap{position:relative;}
+.autocomplete-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;max-height:260px;overflow-y:auto;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,0.1);display:none;}
+.autocomplete-dropdown.show{display:block;}
+.autocomplete-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.autocomplete-item:last-child{border-bottom:none;}
+.autocomplete-item:active,.autocomplete-item:hover{background:var(--bg2);}
+.autocomplete-item .ac-name{font-weight:600;font-size:14px;}
+.autocomplete-item .ac-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.autocomplete-item .ac-price{font-family:'Geist Mono',monospace;font-size:13px;color:var(--text);white-space:nowrap;}
+.ac-highlight{background:#fff3b0;border-radius:2px;padding:0 1px;}
 </style>
 </head>
 <body>
@@ -262,7 +272,13 @@ main{padding-bottom:calc(var(--nav-h) + 8px);min-height:100dvh;}
     <div class="sheet-header"><span class="sheet-title">📋 Faltantes</span><button class="btn btn-ghost" onclick="closeSheet('overlayFaltantes')">✕</button></div>
     <div class="sheet-body">
       <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Productos que te faltan en la bodega. Después asignas a un proveedor para armar el pedido.</div>
-      <div class="form-group"><label class="form-label">Producto *</label><input class="form-input" id="fFaltanteNombre" placeholder="¿Qué falta?"></div>
+      <div class="form-group">
+        <label class="form-label">Producto *</label>
+        <div class="autocomplete-wrap">
+          <input class="form-input" id="fFaltanteNombre" placeholder="Escribí para buscar en catálogos..." autocomplete="off" oninput="buscarEnCatalogos(this.value)">
+          <div class="autocomplete-dropdown" id="acDropdown"></div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Cantidad (opcional)</label><input class="form-input" id="fFaltanteQty" placeholder="Ej: 5 kg, 3 unids..."></div>
       <button class="btn btn-primary btn-full" onclick="addFaltante()">Agregar</button>
       <div id="faltantesList" style="margin-top:20px"></div>
@@ -289,10 +305,10 @@ const DB_ROW_ID=1;
 let DB={proveedores:[],pedidos:[],historial:[],faltantes:[],config:{}};
 let _saveTimer=null;
 let _asignarFaltanteId=null;
+let _selectedFaltanteProdId=null;
+let _selectedFaltanteProvId=null;
 
-function escapeHTML(value){
-  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-}
+function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function escapeAttr(value){return escapeHTML(value).replace(/`/g,'&#96;');}
 function normalizeDB(data){
   const next=(data&&typeof data==='object')?data:{};
@@ -309,9 +325,7 @@ function loadLocalDB(){
   catch(_){return normalizeDB(DB);}
 }
 function renderAll(){renderDashboard();renderProveedores();renderHoy();renderPedidos();renderHistorial();renderFaltantesList();}
-function withTimeout(promise,ms){
-  return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),ms))]);
-}
+function withTimeout(promise,ms){return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),ms))]);}
 async function loadDB(){
   DB=loadLocalDB();
   renderAll();
@@ -320,10 +334,7 @@ async function loadDB(){
     const {data,error}=await withTimeout(sb.from('bodega').select('data').eq('id',DB_ROW_ID).single(),4500);
     if(error&&error.code==='PGRST116'){await sb.from('bodega').insert({id:DB_ROW_ID,data:DB});}
     else if(data){DB=normalizeDB(data.data);try{localStorage.setItem('bodega_db',JSON.stringify(DB));}catch(_){}}
-  }catch(e){
-    console.warn('Supabase error:',e);
-    toast('Sin conexión — usando datos locales');
-  }
+  }catch(e){console.warn('Supabase error:',e);toast('Sin conexión — usando datos locales');}
   renderAll();
 }
 function saveDB(){
@@ -331,10 +342,7 @@ function saveDB(){
   try{localStorage.setItem('bodega_db',JSON.stringify(DB));}catch(_){}
   if(!sb)return;
   clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(async()=>{
-    try{await sb.from('bodega').upsert({id:DB_ROW_ID,data:DB});}
-    catch(e){console.warn('Supabase save error:',e);toast('⚠️ Sin conexión — guardado localmente');}
-  },600);
+  _saveTimer=setTimeout(async()=>{try{await sb.from('bodega').upsert({id:DB_ROW_ID,data:DB});}catch(e){console.warn('Supabase save error:',e);}},600);
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
@@ -409,7 +417,6 @@ function renderDashboard(){
         <div class="dash-sub">pedido${pend!==1?'s':''}</div>
       </div>
     </div>
-    <!-- Faltantes -->
     <div class="dash-card" style="cursor:pointer;background:${faltCount>0?'#fff8e1':'var(--bg2)'};border-color:${faltCount>0?'#f0c040':'var(--border)'}" onclick="openFaltantes()">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
@@ -419,7 +426,6 @@ function renderDashboard(){
         ${faltCount>0?`<div style="font-size:22px;font-weight:700;font-family:'Geist Mono',monospace;color:#c7910b">${faltCount}</div>`:''}
       </div>
     </div>
-    <!-- Semana card -->
     <div class="dash-card" style="cursor:pointer;padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px" onclick="toggleDashCard('dashSemana',this)">
         <div>
@@ -428,11 +434,8 @@ function renderDashboard(){
         </div>
         <svg id="dashSemanaArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      <div id="dashSemana" style="display:none;border-top:1px solid var(--border);padding:12px 18px 16px">
-        <div id="dashSemanaContent"></div>
-      </div>
+      <div id="dashSemana" style="display:none;border-top:1px solid var(--border);padding:12px 18px 16px"><div id="dashSemanaContent"></div></div>
     </div>
-    <!-- Reportes card -->
     <div class="dash-card" style="cursor:pointer;padding:0;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px" onclick="toggleDashCard('dashReportes',this)">
         <div>
@@ -536,44 +539,258 @@ function openFaltantes(){
   if(!DB.faltantes)DB.faltantes=[];
   document.getElementById('fFaltanteNombre').value='';
   document.getElementById('fFaltanteQty').value='';
+  _selectedFaltanteProdId=null;
+  _selectedFaltanteProvId=null;
   renderFaltantesList();
   openSheet('overlayFaltantes');
 }
-function addFaltante(){
-  const nombre=document.getElementById('fFaltanteNombre').value.trim();
-  if(!nombre){toast('El nombre del producto es obligatorio');return;}
-  if(!DB.faltantes)DB.faltantes=[];
-  DB.faltantes.push({id:uid(),nombre:nombre,cantidad:document.getElementById('fFaltanteQty').value.trim()||'',fecha:Date.now()});
+
+function buscarEnCatalogos(query) {
+  _selectedFaltanteProdId = null;
+  _selectedFaltanteProvId = null;
+  const dropdown = document.getElementById('acDropdown');
+  const q = query.toLowerCase().trim();
+  
+  if (q.length < 1) {
+    dropdown.classList.remove('show');
+    return;
+  }
+  
+  const resultados = [];
+  DB.proveedores.forEach(prov => {
+    (prov.catalogo || []).forEach(prod => {
+      if (prod.nombre.toLowerCase().includes(q)) {
+        resultados.push({
+          prodId: prod.id,
+          provId: prov.id,
+          provNombre: prov.nombre,
+          nombre: prod.nombre,
+          unidad: prod.unidad || 'unidad',
+          precio: prod.precio || 0
+        });
+      }
+    });
+  });
+  
+  const limitados = resultados.slice(0, 12);
+  
+  dropdown.innerHTML = limitados.map(r => {
+    const nombreHighlight = resaltarCoincidencia(r.nombre, q);
+    return `
+      <div class="autocomplete-item" onclick="seleccionarFaltante('${escapeAttr(r.prodId)}', '${escapeAttr(r.provId)}', '${escapeAttr(r.nombre)}', '${escapeAttr(r.unidad)}', ${r.precio})">
+        <div>
+          <div class="ac-name">${nombreHighlight}</div>
+          <div class="ac-meta">${escapeHTML(r.unidad)} · ${escapeHTML(r.provNombre)}</div>
+        </div>
+        <div class="ac-price">${r.precio > 0 ? 'S/. ' + r.precio.toFixed(2) : ''}</div>
+      </div>
+    `;
+  }).join('');
+  
+  dropdown.innerHTML += `
+    <div class="autocomplete-item" onclick="agregarProductoNuevo('${escapeAttr(query)}')" style="background:var(--bg2);border-top:2px solid var(--border);">
+      <div>
+        <div class="ac-name" style="color:var(--text)">✨ Agregar "${escapeHTML(query)}" como producto nuevo</div>
+        <div class="ac-meta">No está en ningún catálogo — lo creás ahora</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  `;
+  
+  dropdown.classList.add('show');
+}
+
+function resaltarCoincidencia(texto, query) {
+  const idx = texto.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return escapeHTML(texto);
+  const antes = escapeHTML(texto.substring(0, idx));
+  const match = escapeHTML(texto.substring(idx, idx + query.length));
+  const despues = escapeHTML(texto.substring(idx + query.length));
+  return `${antes}<span class="ac-highlight">${match}</span>${despues}`;
+}
+
+function seleccionarFaltante(prodId, provId, nombre, unidad, precio) {
+  document.getElementById('fFaltanteNombre').value = nombre;
+  document.getElementById('fFaltanteQty').value = unidad;
+  _selectedFaltanteProdId = prodId;
+  _selectedFaltanteProvId = provId;
+  document.getElementById('acDropdown').classList.remove('show');
+}
+
+function agregarProductoNuevo(nombre) {
+  document.getElementById('acDropdown').classList.remove('show');
+  document.getElementById('overlayQuickFaltante')?.remove();
+  
+  const nombreLimpio = nombre.trim();
+  
+  const el = document.createElement('div');
+  el.className = 'overlay open';
+  el.id = 'overlayQuickFaltante';
+  el.style.zIndex = '400';
+  el.innerHTML = `
+    <div class="sheet" style="max-height:70dvh">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span class="sheet-title">Producto nuevo</span>
+        <button class="btn btn-ghost" onclick="document.getElementById('overlayQuickFaltante').remove()">✕</button>
+      </div>
+      <div class="sheet-body">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px">
+          Este producto no está en ningún catálogo. Completá los datos y elegí a qué proveedor agregarlo.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" id="qfNombre" value="${escapeAttr(nombreLimpio)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unidad</label>
+          <select class="form-select" id="qfUnidad">
+            <option value="unidad">Unidad</option>
+            <option value="kg">Kilogramo (kg)</option>
+            <option value="g">Gramo (g)</option>
+            <option value="litro">Litro</option>
+            <option value="ml">Mililitro (ml)</option>
+            <option value="caja">Caja</option>
+            <option value="docena">Docena</option>
+            <option value="bolsa">Bolsa</option>
+            <option value="paquete">Paquete</option>
+            <option value="six">Six pack</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio (S/.)</label>
+          <div class="price-wrap">
+            <span class="price-prefix">S/.</span>
+            <input class="form-input price-input" id="qfPrecio" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <select class="form-select" id="qfProvId">
+            <option value="">Seleccioná un proveedor...</option>
+            ${DB.proveedores.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'')).map(p => 
+              `<option value="${escapeAttr(p.id)}">${escapeHTML(p.nombre)}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cantidad para el faltante (opcional)</label>
+          <input class="form-input" id="qfCantidad" placeholder="Ej: 5 kg, 3 unids...">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="guardarProductoNuevo()">Agregar al catálogo y a faltantes</button>
+      </div>
+    </div>
+  `;
+  
+  el.addEventListener('click', function(e) {
+    if (e.target === this) this.remove();
+  });
+  
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById('qfNombre')?.focus(), 100);
+}
+
+function guardarProductoNuevo() {
+  const nombre = document.getElementById('qfNombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio'); return; }
+  
+  const provId = document.getElementById('qfProvId').value;
+  if (!provId) { toast('Seleccioná un proveedor'); return; }
+  
+  const unidad = document.getElementById('qfUnidad').value;
+  const precio = parseFloat(document.getElementById('qfPrecio').value) || 0;
+  const cantidad = document.getElementById('qfCantidad').value.trim();
+  
+  const prov = DB.proveedores.find(p => p.id === provId);
+  if (!prov.catalogo) prov.catalogo = [];
+  
+  const nuevoProd = {
+    id: uid(),
+    nombre: nombre,
+    unidad: unidad,
+    precio: precio,
+    totalQty: 0,
+    totalGasto: 0
+  };
+  prov.catalogo.push(nuevoProd);
+  
+  if (!DB.faltantes) DB.faltantes = [];
+  DB.faltantes.push({
+    id: uid(),
+    nombre: nombre,
+    cantidad: cantidad,
+    prodIdSugerido: nuevoProd.id,
+    provIdSugerido: provId,
+    fecha: Date.now()
+  });
+  
   saveDB();
-  document.getElementById('fFaltanteNombre').value='';
-  document.getElementById('fFaltanteQty').value='';
+  document.getElementById('overlayQuickFaltante')?.remove();
+  document.getElementById('fFaltanteNombre').value = '';
+  document.getElementById('fFaltanteQty').value = '';
+  _selectedFaltanteProdId = null;
+  _selectedFaltanteProvId = null;
+  renderFaltantesList();
+  renderDashboard();
+  toast(`Producto agregado al catálogo de ${prov.nombre} y a faltantes ✓`);
+}
+
+function addFaltante() {
+  const nombre = document.getElementById('fFaltanteNombre').value.trim();
+  if (!nombre) { toast('El nombre del producto es obligatorio'); return; }
+  if (!DB.faltantes) DB.faltantes = [];
+  
+  DB.faltantes.push({
+    id: uid(),
+    nombre: nombre,
+    cantidad: document.getElementById('fFaltanteQty').value.trim() || '',
+    prodIdSugerido: _selectedFaltanteProdId || null,
+    provIdSugerido: _selectedFaltanteProvId || null,
+    fecha: Date.now()
+  });
+  
+  saveDB();
+  document.getElementById('fFaltanteNombre').value = '';
+  document.getElementById('fFaltanteQty').value = '';
+  _selectedFaltanteProdId = null;
+  _selectedFaltanteProvId = null;
   renderFaltantesList();
   renderDashboard();
   toast('Producto agregado a faltantes');
 }
+
 function removeFaltante(id){
   DB.faltantes=DB.faltantes.filter(f=>f.id!==id);
   saveDB();
   renderFaltantesList();
   renderDashboard();
 }
-function renderFaltantesList(){
-  const el=document.getElementById('faltantesList');if(!el)return;
-  if(!DB.faltantes||!DB.faltantes.length){
-    el.innerHTML='<div class="no-data" style="text-align:center;padding:20px">No hay productos pendientes.</div>';
+
+function renderFaltantesList() {
+  const el = document.getElementById('faltantesList');
+  if (!el) return;
+  if (!DB.faltantes || !DB.faltantes.length) {
+    el.innerHTML = '<div class="no-data" style="text-align:center;padding:20px">No hay productos pendientes.</div>';
     return;
   }
-  el.innerHTML=DB.faltantes.map(f=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px">${escapeHTML(f.nombre)}</div>
-        ${f.cantidad?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${escapeHTML(f.cantidad)}</div>`:''}
+  el.innerHTML = DB.faltantes.map(f => {
+    const provSugerido = f.provIdSugerido 
+      ? DB.proveedores.find(p => p.id === f.provIdSugerido) 
+      : null;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${escapeHTML(f.nombre)}</div>
+          ${f.cantidad ? `<div style="font-size:12px;color:var(--text2);margin-top:2px">${escapeHTML(f.cantidad)}</div>` : ''}
+          ${provSugerido ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">📦 ${escapeHTML(provSugerido.nombre)}</div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent-text);padding:6px 12px;font-size:12px" onclick="openAsignarProv('${f.id}')">Asignar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px" onclick="removeFaltante('${f.id}')">✕</button>
       </div>
-      <button class="btn btn-sm" style="background:var(--accent-bg);color:var(--accent-text);padding:6px 12px;font-size:12px" onclick="openAsignarProv('${f.id}')">Asignar</button>
-      <button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px" onclick="removeFaltante('${f.id}')">✕</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
 function openAsignarProv(faltanteId){
   _asignarFaltanteId=faltanteId;
   const provs=DB.proveedores;
@@ -593,42 +810,84 @@ function openAsignarProv(faltanteId){
   }
   openSheet('overlayAsignarProv');
 }
-function asignarFaltanteAProveedor(provId){
-  const faltante=DB.faltantes.find(f=>f.id===_asignarFaltanteId);
-  if(!faltante)return;
-  const prov=DB.proveedores.find(p=>p.id===provId);
-  if(!prov)return;
-  // Buscar pedido pendiente o borrador de este proveedor
-  let pedido=DB.pedidos.find(p=>p.proveedorId===provId&&(p.estado==='pendiente'||p.estado==='borrador'));
-  if(!pedido){
-    // Crear pedido nuevo
-    pedido={id:uid(),proveedorId:provId,items:[],estado:'borrador',fecha:Date.now()};
+
+function asignarFaltanteAProveedor(provId) {
+  const faltante = DB.faltantes.find(f => f.id === _asignarFaltanteId);
+  if (!faltante) return;
+  const prov = DB.proveedores.find(p => p.id === provId);
+  if (!prov) return;
+
+  let catProd = null;
+  
+  if (faltante.prodIdSugerido && faltante.provIdSugerido === provId) {
+    catProd = (prov.catalogo || []).find(c => c.id === faltante.prodIdSugerido);
+  }
+  
+  if (!catProd) {
+    const nombreBuscado = faltante.nombre.toLowerCase().trim();
+    catProd = (prov.catalogo || []).find(c => 
+      c.nombre.toLowerCase().trim() === nombreBuscado
+    );
+  }
+  
+  if (!catProd) {
+    const nombreBuscado = faltante.nombre.toLowerCase().trim();
+    catProd = (prov.catalogo || []).find(c => 
+      c.nombre.toLowerCase().includes(nombreBuscado) ||
+      nombreBuscado.includes(c.nombre.toLowerCase())
+    );
+  }
+
+  let pedido = DB.pedidos.find(p => 
+    p.proveedorId === provId && 
+    (p.estado === 'pendiente' || p.estado === 'borrador')
+  );
+  
+  if (!pedido) {
+    pedido = { id: uid(), proveedorId: provId, items: [], estado: 'borrador', fecha: Date.now() };
     DB.pedidos.push(pedido);
   }
-  // Buscar si ya existe el producto en el pedido
-  const existente=pedido.items.find(i=>i.nombre.toLowerCase()===faltante.nombre.toLowerCase());
-  if(existente){
-    existente.qty=(existente.qty||0)+1;
+
+  const existente = pedido.items.find(i => 
+    i.nombre.toLowerCase().trim() === faltante.nombre.toLowerCase().trim()
+  );
+  
+  if (existente) {
+    existente.qty = (existente.qty || 0) + 1;
+    if (catProd) {
+      existente.precio = catProd.precio || existente.precio;
+      existente.unidad = catProd.unidad || existente.unidad;
+      existente.prodId = catProd.id;
+    }
   } else {
-    // Buscar en catálogo para obtener precio y unidad
-    const catProd=(prov.catalogo||[]).find(c=>c.nombre.toLowerCase()===faltante.nombre.toLowerCase());
     pedido.items.push({
-      prodId:catProd?.id||uid(),
-      nombre:faltante.nombre,
-      unidad:catProd?.unidad||'unidad',
-      precio:catProd?.precio||0,
-      qty:1
+      prodId: catProd ? catProd.id : (faltante.prodIdSugerido || uid()),
+      nombre: faltante.nombre,
+      unidad: catProd ? (catProd.unidad || 'unidad') : (faltante.cantidad || 'unidad'),
+      precio: catProd ? (catProd.precio || 0) : 0,
+      qty: 1
     });
   }
-  // Eliminar de faltantes
-  DB.faltantes=DB.faltantes.filter(f=>f.id!==_asignarFaltanteId);
+
+  DB.faltantes = DB.faltantes.filter(f => f.id !== _asignarFaltanteId);
   saveDB();
   closeSheet('overlayAsignarProv');
   renderFaltantesList();
   renderDashboard();
-  toast(`Agregado al pedido de ${prov.nombre}`);
-  _asignarFaltanteId=null;
+  
+  const msg = catProd 
+    ? `Agregado al pedido de ${prov.nombre} ✓` 
+    : `Agregado (sin coincidencia exacta — revisá el precio)`;
+  toast(msg);
+  _asignarFaltanteId = null;
 }
+
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.autocomplete-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('acDropdown').classList.remove('show');
+  }
+});
 
 // ── PROVEEDORES ──────────────────────────────────────────────
 let editProvId=null;
