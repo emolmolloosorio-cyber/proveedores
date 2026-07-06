@@ -49,7 +49,6 @@
             color: var(--color-primario);
         }
 
-        /* ---------- FORMULARIO ---------- */
         .formulario-contenedor {
             background-color: var(--color-blanco);
             padding: 25px;
@@ -104,7 +103,6 @@
             background-color: var(--color-primario-hover);
         }
 
-        /* ---------- ACCIONES (BÚSQUEDA + RESPALDO) ---------- */
         .acciones-barra {
             display: flex;
             gap: 10px;
@@ -152,7 +150,6 @@
             color: white;
         }
 
-        /* ---------- LISTA DE PROVEEDORES ---------- */
         .lista-proveedores {
             display: flex;
             flex-direction: column;
@@ -220,7 +217,6 @@
             padding: 30px;
         }
 
-        /* ---------- RESPONSIVO ---------- */
         @media (max-width: 600px) {
             .proveedor-card {
                 flex-direction: column;
@@ -249,7 +245,6 @@
             <h1>Gestión de Proveedores</h1>
         </header>
 
-        <!-- Formulario -->
         <div class="formulario-contenedor">
             <h2 id="titulo-formulario">Nuevo Proveedor</h2>
             <form id="form-proveedor">
@@ -273,26 +268,19 @@
             </form>
         </div>
 
-        <!-- Barra de búsqueda y respaldo -->
         <div class="acciones-barra">
             <input type="text" id="buscar-proveedor" class="buscar-input" placeholder="Buscar proveedor...">
             <button type="button" id="btn-exportar" class="btn-accion btn-exportar">📥 Respaldo</button>
             <button type="button" id="btn-importar" class="btn-accion btn-importar">📤 Restaurar</button>
         </div>
 
-        <!-- Lista de proveedores -->
         <div id="lista-proveedores" class="lista-proveedores"></div>
     </div>
 
     <script>
-        // ============================================
-        // GESTIÓN DE PROVEEDORES - HERRAMIENTA INTERNA
-        // ============================================
-
         let proveedores = [];
         let proveedorEditandoId = null;
 
-        // ---------- INICIALIZACIÓN ----------
         document.addEventListener('DOMContentLoaded', () => {
             cargarProveedores();
             mostrarProveedores();
@@ -301,7 +289,6 @@
             configurarBotonesRespaldo();
         });
 
-        // ---------- CARGA Y PERSISTENCIA ----------
         function cargarProveedores() {
             const datos = localStorage.getItem('proveedores');
             if (datos) {
@@ -313,12 +300,10 @@
             localStorage.setItem('proveedores', JSON.stringify(proveedores));
         }
 
-        // ---------- GENERAR ID ÚNICO ----------
         function generarId() {
             return Date.now().toString(36) + Math.random().toString(36).substring(2);
         }
 
-        // ---------- FORMULARIO ----------
         function configurarFormulario() {
             const form = document.getElementById('form-proveedor');
             form.addEventListener('submit', manejarEnvioFormulario);
@@ -339,7 +324,6 @@
             }
 
             if (proveedorEditandoId) {
-                // Actualizar existente
                 const proveedor = proveedores.find(p => p.id === proveedorEditandoId);
                 if (proveedor) {
                     proveedor.nombre = nombre;
@@ -351,7 +335,6 @@
                 document.getElementById('btn-guardar').textContent = 'Guardar Proveedor';
                 document.getElementById('titulo-formulario').textContent = 'Nuevo Proveedor';
             } else {
-                // Crear nuevo
                 const nuevoProveedor = {
                     id: generarId(),
                     nombre: nombre,
@@ -368,7 +351,6 @@
             mostrarProveedores();
         }
 
-        // ---------- MOSTRAR LISTA ----------
         function mostrarProveedores(listaFiltrada = null) {
             const lista = listaFiltrada || proveedores;
             const contenedor = document.getElementById('lista-proveedores');
@@ -405,7 +387,6 @@
             return div.innerHTML;
         }
 
-        // ---------- EDITAR ----------
         function editarProveedor(id) {
             const proveedor = proveedores.find(p => p.id === id);
             if (!proveedor) return;
@@ -422,7 +403,6 @@
             document.getElementById('form-proveedor').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // ---------- ELIMINAR ----------
         function eliminarProveedor(id) {
             const proveedor = proveedores.find(p => p.id === id);
             if (!proveedor) return;
@@ -439,7 +419,6 @@
             }
         }
 
-        // ---------- LIMPIAR FORMULARIO ----------
         function limpiarFormulario() {
             document.getElementById('form-proveedor').reset();
             proveedorEditandoId = null;
@@ -447,7 +426,6 @@
             document.getElementById('titulo-formulario').textContent = 'Nuevo Proveedor';
         }
 
-        // ---------- BÚSQUEDA ----------
         function configurarBusqueda() {
             const campoBusqueda = document.getElementById('buscar-proveedor');
             if (campoBusqueda) {
@@ -471,7 +449,6 @@
             }
         }
 
-        // ---------- RESPALDO Y RESTAURACIÓN ----------
         function configurarBotonesRespaldo() {
             document.getElementById('btn-exportar').addEventListener('click', exportarDatos);
             document.getElementById('btn-importar').addEventListener('click', importarDatos);
