@@ -280,7 +280,6 @@ function renderDashboard(){
   const now=new Date();
   const startMonth=new Date(now.getFullYear(),now.getMonth(),1).getTime();
   const startWeek=Date.now()-7*24*60*60*1000;
-  const todayIdx=jsDayToIdx(now.getDay());
   const gastomes=DB.historial.filter(h=>h.fecha>=startMonth).reduce((s,h)=>s+(h.total||0),0);
   const gastosem=DB.historial.filter(h=>h.fecha>=startWeek).reduce((s,h)=>s+(h.total||0),0);
   const pend=DB.pedidos.filter(p=>p.estado==='pendiente').length;
@@ -602,8 +601,8 @@ function openHistDetail(histId){
           <div style="font-weight:600;font-size:14px;margin-bottom:4px">${escapeHTML(i.nombre)} <span style="font-weight:400;color:var(--text3);font-size:12px">x${i.qty} ${escapeHTML(i.unidad)}</span></div>
           <div style="display:flex;gap:12px;font-size:12px;flex-wrap:wrap">
             <span style="color:var(--text3)">Compra: <span class="money">S/.${(i.precio||0).toFixed(2)}</span></span>
-            <span style="color:var(--text3)">Venta: <span class="money">${(i.precioVenta||0)>0?'S/.${(i.precioVenta||0).toFixed(2)}':'—'}</span></span>
-            <span style="${cls}font-weight:600;">${(i.precioVenta||0)>0?(m>=0?'+':'')+'S/.${m.toFixed(2)} ('+(mp>=0?'+':'')+'${mp.toFixed(0)}%)':'—'}</span>
+            <span style="color:var(--text3)">Venta: <span class="money">${(i.precioVenta||0)>0?'S/.'+(i.precioVenta||0).toFixed(2):'—'}</span></span>
+            <span style="${cls}font-weight:600;">${(i.precioVenta||0)>0?(m>=0?'+':'')+'S/.'+m.toFixed(2)+' ('+(mp>=0?'+':'')+mp.toFixed(0)+'%)':'—'}</span>
           </div>
         </div>`;
       }).join('')}
