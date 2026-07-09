@@ -678,7 +678,7 @@ async function generateListPng(titulo,items){
 function printReceipt(titulo, fecha, items, nota){
   const W=32,NL='\r\n';
   const center=s=>{const p=Math.max(0,W-s.length);return' '.repeat(Math.floor(p/2))+s+' '.repeat(Math.ceil(p/2));};
-  let txt='',total=0;
+  let txt='';
   txt+=center('MI BODEGA')+NL;
   txt+='-'.repeat(W)+NL;
   txt+=center(titulo)+NL;
@@ -686,14 +686,11 @@ function printReceipt(titulo, fecha, items, nota){
   txt+='-'.repeat(W)+NL;
   items.filter(i=>i.qty>0).forEach((i,idx)=>{
     const pv=i.precioVenta||0;
-    total+=(i.qty||0)*pv;
     const nom=(i.nombre||'').substring(0,16);
     const price='S/. '+pv.toFixed(2)+(i.unidad?' '+i.unidad.substring(0,4):'');
     const line=(idx+1)+'. '+nom;
     txt+=line+' '.repeat(Math.max(1,W-line.length-price.length))+price+NL;
   });
-  txt+='-'.repeat(W)+NL;
-  txt+='TOTAL'+' '.repeat(Math.max(1,W-15))+'S/. '+total.toFixed(2)+NL;
   txt+='-'.repeat(W)+NL;
   if(nota)txt+='NOTA: '+nota+NL+NL;
   txt+=center('Mi Bodega')+NL;
