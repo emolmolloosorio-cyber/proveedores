@@ -674,40 +674,39 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (RawBT 58mm) ────────────────────────────────
+// ── IMPRIMIR (58mm) ──────────────────────────────────────
+const _printCSS='@page{margin:0;width:58mm}@media print{body{visibility:hidden}#printReceipt{visibility:visible;position:absolute;left:0;top:0;width:48mm;padding:4mm 0;font-family:monospace;font-size:10px;line-height:1.35;color:#000}}';
 function printReceipt(titulo, fecha, items, total, nota){
-  const W=30;
-  const NL='\r\n';
-  let txt='';
-  const center=(s)=>s.length>=W?s:s+' '.repeat(Math.max(0,Math.floor((W-s.length)/2)));
-  txt+=center('MI BODEGA')+NL;
-  txt+='-'.repeat(W)+NL;
-  txt+=center(titulo)+NL;
-  const dia=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
-  txt+=center(dia)+NL;
-  txt+='-'.repeat(W)+NL;
+  const W=32;
+  const TR=document.getElementById('printReceipt');
+  if(TR)TR.remove();
+  const div=document.createElement('div');
+  div.id='printReceipt';
+  const mk=s=>('<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+s+'</span>');
+  const sep='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
+  let html=mk('MI BODEGA')+sep+mk(titulo)+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+fecha+'</span>'+sep;
   items.filter(i=>i.qty>0).forEach((i,idx)=>{
-    const nom=(i.nombre||'').substring(0,W-6);
+    const nom=escapeHTML((i.nombre||'').substring(0,W-8));
     const qty=i.qty||0;
-    const prec=(i.precio||0).toFixed(2);
-    const sub=(qty*(i.precio||0)).toFixed(2);
-    const line=(idx+1)+'. '+nom+' '.repeat(Math.max(1,W-6-nom.length))+qty.toString();
-    txt+=line+NL;
-    const line2='   '+i.unidad.substring(0,14)+' '.repeat(Math.max(1,W-24))+'S/. '+sub.padStart(8);
-    txt+=line2+NL;
+    const sub=((qty*(i.precio||0))).toFixed(2);
+    html+='<div style="display:flex;justify-content:space-between;padding:2px 0">';
+    html+='<span>'+(idx+1)+'. '+nom+'</span>';
+    html+='<span>'+qty+'</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px">';
+    html+='<span>'+escapeHTML(i.unidad||'')+'</span>';
+    html+='<span>S/. '+sub+'</span></div>';
   });
-  txt+='-'.repeat(W)+NL;
-  txt+='TOTAL'+' '.repeat(W-15)+'S/. '+total.toFixed(2).padStart(8)+NL;
-  txt+='-'.repeat(W)+NL;
-  if(nota)txt+='NOTA: '+nota+NL+NL;
-  txt+=center('Mi Bodega')+NL;
-  try{
-    const url='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8&cut=yes';
-    const w=window.open(url,'_blank');
-    if(!w||w.closed){
-      fetch('http://127.0.0.1:3839/print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8&cut=yes').catch(()=>toast('No se pudo imprimir. ¿RawBT está instalado y corriendo?'));
-    }else{toast('Enviando a impresora...');}
-  }catch(e){toast('Error al imprimir: '+e.message);}
+  html+=sep;
+  html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';
+  html+=sep;
+  if(nota)html+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
+  html+=mk('Mi Bodega');
+  div.innerHTML=html;
+  const s=document.createElement('style');
+  s.textContent=_printCSS;
+  div.appendChild(s);
+  document.body.appendChild(div);
+  setTimeout(()=>{window.print();document.body.removeChild(div);},100);
 }
 function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
 function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.total||0,h.nota);}
