@@ -674,22 +674,23 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (58mm · RawBT) ────────────────────────────
-function printReceipt(titulo, fecha, items, total, nota){
+// ── IMPRIMIR (58mm · solo precio venta) ────────────────
+function printReceipt(titulo, fecha, items, nota){
   const W=32,NL='\r\n';
   const center=s=>{const p=Math.max(0,W-s.length);return' '.repeat(Math.floor(p/2))+s+' '.repeat(Math.ceil(p/2));};
-  let txt='';
+  let txt='',total=0;
   txt+=center('MI BODEGA')+NL;
   txt+='-'.repeat(W)+NL;
   txt+=center(titulo)+NL;
   txt+=center(fecha)+NL;
   txt+='-'.repeat(W)+NL;
   items.filter(i=>i.qty>0).forEach((i,idx)=>{
-    const nom=(i.nombre||'').substring(0,W-8);
-    const qty=i.qty||0;
-    const sub=((qty*(i.precio||0))).toFixed(2);
-    txt+=(idx+1)+'. '+nom+' '.repeat(Math.max(1,W-8-nom.length-3-qty.toString().length-1))+qty+NL;
-    txt+='   '+((i.unidad||'').substring(0,14))+' '.repeat(Math.max(1,W-22))+'S/. '+sub+NL;
+    const pv=i.precioVenta||i.precio||0;
+    const sub=(i.qty||0)*pv;
+    total+=sub;
+    const nom=(i.nombre||'').substring(0,18);
+    const line=(idx+1)+'. '+nom, price='S/. '+sub.toFixed(2);
+    txt+=line+' '.repeat(Math.max(1,W-line.length-price.length))+price+NL;
   });
   txt+='-'.repeat(W)+NL;
   txt+='TOTAL'+' '.repeat(Math.max(1,W-15))+'S/. '+total.toFixed(2)+NL;
@@ -702,8 +703,8 @@ function printReceipt(titulo, fecha, items, total, nota){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   toast('Abriendo RawBT...');
 }
-function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
-function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.total||0,h.nota);}
+function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items);}
+function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.nota);}
 
 // ── REPORTES ──────────────────────────────────────────────
 let _reporteDias=30;
