@@ -674,7 +674,7 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (58mm · RawBT + fallback Navegador) ────────
+// ── IMPRIMIR (58mm · RawBT HTTP API + fallback) ────────
 function printReceipt(titulo, fecha, items, total, nota){
   const W=32;
   const NL='\r\n';
@@ -697,18 +697,15 @@ function printReceipt(titulo, fecha, items, total, nota){
   txt+='-'.repeat(W)+NL;
   if(nota)txt+='NOTA: '+nota+NL+NL;
   txt+=center('Mi Bodega')+NL;
-  (function rawbt(){
-    try{
-      const a=document.createElement('a');
-      a.href='rawbt://print?text='+encodeURIComponent(txt)+'&align=center&font=M&charset=utf-8';
-      a.target='_blank';a.rel='noopener';a.style.display='none';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-      setTimeout(()=>{try{if(!document.hidden)return}catch(_){};fallback();},800);
-    }catch(e){fallback();}
-  })();
-  function fallback(){
-    const div=document.createElement('div');
-    div.id='printReceipt';
+  let printed=false;
+  const done=()=>{if(!printed){printed=true;toast('Impreso');}};
+  const err=()=>{if(!printed){printed=true;browserPrint();}};
+  // 1) RawBT HTTP API (port 3839)
+  fetch('http://127.0.0.1:3839/print',{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:txt}).then(done).catch(err);
+  // 2) RawBT URL protocol (fallback)
+  setTimeout(()=>{if(printed)return;try{const a=document.createElement('a');a.href='rawbt:'+encodeURIComponent(txt);a.target='_blank';a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(err,1200);}catch(e){err();}},400);
+  function browserPrint(){
+    const div=document.createElement('div');div.id='printReceipt';
     const m=s=>'<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+s+'</span>';
     const sp='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
     let html=m('MI BODEGA')+sp+m(titulo)+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+fecha+'</span>'+sp;
@@ -719,16 +716,12 @@ function printReceipt(titulo, fecha, items, total, nota){
       html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+nom+'</span><span>'+qty+'</span></div>';
       html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+sub+'</span></div>';
     });
-    html+=sp;
-    html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';
-    html+=sp;
+    html+=sp;html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';html+=sp;
     if(nota)html+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
     html+=m('Mi Bodega');
-    div.innerHTML=html;
-    const s=document.createElement('style');
+    div.innerHTML=html;const s=document.createElement('style');
     s.textContent='@page{margin:0;width:58mm}@media print{body{visibility:hidden}#printReceipt{visibility:visible;position:absolute;left:0;top:0;width:48mm;padding:4mm 0;font-family:monospace;font-size:10px;line-height:1.35;color:#000}}';
-    div.appendChild(s);
-    document.body.appendChild(div);
+    div.appendChild(s);document.body.appendChild(div);
     setTimeout(()=>{window.print();document.body.removeChild(div);},100);
   }
 }
