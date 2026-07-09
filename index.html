@@ -635,14 +635,15 @@ function openHistEdit(hid){
   const it=(h.items||[]).filter(i=>i.qty>0);
   document.getElementById('sheetHistDetail').innerHTML=`
     <div class="sheet-handle"></div>
-    <div class="sheet-header"><span class="sheet-title">Editar precios</span><button class="btn btn-ghost" onclick="openHistDetail('${hid}')">←</button></div>
+    <div class="sheet-header"><span class="sheet-title">Editar</span><button class="btn btn-ghost" onclick="openHistDetail('${hid}')">←</button></div>
     <div class="sheet-body">
-      <div style="font-size:14px;color:var(--text2);margin-bottom:18px">Ajustá los precios de compra y venta:</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:18px">Ajustá cantidades y precios:</div>
       ${it.map((i,idx)=>`<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)">
-        <div style="font-weight:600;margin-bottom:8px">${escapeHTML(i.nombre)} — x${i.qty} ${escapeHTML(i.unidad)}</div>
-        <div style="display:flex;gap:8px;">
-          <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Precio compra</div><div class="price-wrap"><span class="price-prefix" style="left:8px;font-size:11px">S/.</span><input class="form-input price-input he-pc" type="number" step="0.01" value="${(i.precio||0).toFixed(2)}" data-idx="${idx}" style="padding:8px 8px 8px 28px;font-size:13px"></div></div>
-          <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Precio venta</div><div class="price-wrap"><span class="price-prefix" style="left:8px;font-size:11px">S/.</span><input class="form-input price-input he-pv" type="number" step="0.01" value="${(i.precioVenta||0)>0?(i.precioVenta||0).toFixed(2):''}" data-idx="${idx}" placeholder="0.00" style="padding:8px 8px 8px 28px;font-size:13px"></div></div>
+        <div style="font-weight:600;margin-bottom:8px">${escapeHTML(i.nombre)} — ${escapeHTML(i.unidad)}</div>
+        <div style="display:flex;gap:6px;">
+          <div style="flex:0 0 70px"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Cant.</div><input class="form-input he-qty" type="number" min="0" step="1" value="${i.qty}" data-idx="${idx}" style="padding:8px;text-align:center;font-size:13px;font-family:'Geist Mono',monospace"></div>
+          <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Compra</div><div class="price-wrap"><span class="price-prefix" style="left:8px;font-size:11px">S/.</span><input class="form-input price-input he-pc" type="number" step="0.01" value="${(i.precio||0).toFixed(2)}" data-idx="${idx}" style="padding:8px 8px 8px 28px;font-size:13px"></div></div>
+          <div style="flex:1"><div style="font-size:9px;color:var(--text3);margin-bottom:3px">Venta</div><div class="price-wrap"><span class="price-prefix" style="left:8px;font-size:11px">S/.</span><input class="form-input price-input he-pv" type="number" step="0.01" value="${(i.precioVenta||0)>0?(i.precioVenta||0).toFixed(2):''}" data-idx="${idx}" placeholder="0.00" style="padding:8px 8px 8px 28px;font-size:13px"></div></div>
         </div>
       </div>`).join('')}
       <button class="btn btn-primary btn-full" onclick="saveHistEdit('${hid}')">Guardar cambios</button>
@@ -655,8 +656,10 @@ function saveHistEdit(hid){
     const idx=parseInt(inp.dataset.idx);
     if(!isNaN(idx)&&h.items[idx]){
       const pv=document.querySelector(`.he-pv[data-idx="${idx}"]`);
+      const qty=document.querySelector(`.he-qty[data-idx="${idx}"]`);
       h.items[idx].precio=parseFloat(inp.value)||0;
       h.items[idx].precioVenta=parseFloat(pv?.value)||0;
+      h.items[idx].qty=parseFloat(qty?.value)||0;
     }
   });
   h.total=(h.items||[]).reduce((s,i)=>s+(i.qty||0)*(i.precio||0),0);
