@@ -547,7 +547,7 @@ function saveQuickProd(){const nombre=document.getElementById('qpNombre').value.
 
 function saveOrder(estado,provId){const items=[];document.querySelectorAll('.qty-input').forEach(inp=>{const pi=document.querySelector(`.precio-input[data-prodid="${inp.dataset.prodid}"]`);const precio=pi?parseFloat(pi.value)||0:parseFloat(inp.dataset.precio)||0;items.push({prodId:inp.dataset.prodid,nombre:inp.dataset.nombre||'',unidad:inp.dataset.unidad||'',precio,qty:parseFloat(inp.value)||0});});if(!items.some(i=>i.qty>0)){toast('Agrega al menos una cantidad');return;}if(currentOrderId){Object.assign(DB.pedidos.find(x=>x.id===currentOrderId),{items,estado,fecha:Date.now()});}else{DB.pedidos.push({id:uid(),proveedorId:provId,items,estado,fecha:Date.now()});}saveDB();closeSheet('overlayOrder');renderPedidos();toast(estado==='pendiente'?'Pedido guardado':'Borrador guardado');}
 
-function openOrderDetail(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;currentOrderId=ordId;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});document.getElementById('sheetOrderDetail').innerHTML=`<div class="sheet-handle"></div><div class="sheet-header"><span class="sheet-title">${escapeHTML(prov?.nombre||'Pedido')}</span><button class="btn btn-ghost" onclick="closeSheet('overlayOrderDetail')">✕</button></div><div class="sheet-body"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div><div style="font-size:13px;color:var(--text3)">${fecha}</div><div style="font-size:13px;color:var(--text2);margin-top:3px">${ord.estado==='pendiente'?'Pendiente':'Borrador'}</div></div><div class="money" style="font-size:26px">S/. ${total.toFixed(2)}</div></div>${ord.items.filter(i=>i.qty>0).map(i=>`<div class="order-product"><div class="order-info"><div class="order-name">${escapeHTML(i.nombre)}</div><div class="order-meta">S/. ${parseFloat(i.precio||0).toFixed(2)} / ${escapeHTML(i.unidad)}</div></div><div style="text-align:right"><div class="money" style="font-size:15px">${i.qty} ${escapeHTML(i.unidad)}</div><div class="money" style="font-size:12px;color:var(--text3)">S/. ${(i.qty*(i.precio||0)).toFixed(2)}</div></div></div>`).join('')}<div style="margin-top:20px;display:flex;flex-direction:column;gap:10px"><button class="btn btn-secondary btn-full" onclick="exportOrderDetailPng('${ord.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar como imagen</button><button class="btn btn-secondary btn-full" onclick="closeSheet('overlayOrderDetail');editOrder('${ord.id}')">Editar pedido</button>${ord.estado==='pendiente'?`<button class="btn btn-primary btn-full" onclick="confirmCompra('${ord.id}')">Registrar compra</button>`:`<button class="btn btn-secondary btn-full" onclick="markPendiente('${ord.id}')">Marcar como pendiente</button>`}<button class="btn btn-danger btn-full" onclick="deleteOrder('${ord.id}')">Eliminar pedido</button></div></div>`;openSheet('overlayOrderDetail');}
+function openOrderDetail(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;currentOrderId=ordId;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});document.getElementById('sheetOrderDetail').innerHTML=`<div class="sheet-handle"></div><div class="sheet-header"><span class="sheet-title">${escapeHTML(prov?.nombre||'Pedido')}</span><button class="btn btn-ghost" onclick="closeSheet('overlayOrderDetail')">✕</button></div><div class="sheet-body"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div><div style="font-size:13px;color:var(--text3)">${fecha}</div><div style="font-size:13px;color:var(--text2);margin-top:3px">${ord.estado==='pendiente'?'Pendiente':'Borrador'}</div></div><div class="money" style="font-size:26px">S/. ${total.toFixed(2)}</div></div>${ord.items.filter(i=>i.qty>0).map(i=>`<div class="order-product"><div class="order-info"><div class="order-name">${escapeHTML(i.nombre)}</div><div class="order-meta">S/. ${parseFloat(i.precio||0).toFixed(2)} / ${escapeHTML(i.unidad)}</div></div><div style="text-align:right"><div class="money" style="font-size:15px">${i.qty} ${escapeHTML(i.unidad)}</div><div class="money" style="font-size:12px;color:var(--text3)">S/. ${(i.qty*(i.precio||0)).toFixed(2)}</div></div></div>`).join('')}<div style="margin-top:20px;display:flex;flex-direction:column;gap:10px"><button class="btn btn-secondary btn-full" onclick="exportOrderDetailPng('${ord.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button><button class="btn btn-secondary btn-full" onclick="printOrder('${ord.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button><button class="btn btn-secondary btn-full" onclick="closeSheet('overlayOrderDetail');editOrder('${ord.id}')">Editar pedido</button>${ord.estado==='pendiente'?`<button class="btn btn-primary btn-full" onclick="confirmCompra('${ord.id}')">Registrar compra</button>`:`<button class="btn btn-secondary btn-full" onclick="markPendiente('${ord.id}')">Marcar como pendiente</button>`}<button class="btn btn-danger btn-full" onclick="deleteOrder('${ord.id}')">Eliminar pedido</button></div></div>`;openSheet('overlayOrderDetail');}
 function editOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;currentOrderId=ordId;currentOrderProvId=ord.proveedorId;_renderOrderSheet(ord.proveedorId,ord.items);openSheet('overlayOrder');}
 function markPendiente(ordId){DB.pedidos.find(x=>x.id===ordId).estado='pendiente';saveDB();closeSheet('overlayOrderDetail');renderPedidos();toast('Marcado como pendiente');}
 function deleteOrder(ordId){confirm_('Eliminar pedido','¿Eliminar este pedido?',()=>{DB.pedidos=DB.pedidos.filter(x=>x.id!==ordId);saveDB();closeSheet('overlayOrderDetail');renderPedidos();toast('Pedido eliminado');});}
@@ -613,7 +613,7 @@ function openHistDetail(histId){
       </div>`:''}
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-primary btn-full" onclick="openHistEdit('${h.id}')">✏️ Editar precios</button>
-        <button class="btn btn-secondary btn-full" onclick="exportHistPng('${h.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar como imagen</button>
+        <button class="btn btn-secondary btn-full" onclick="exportHistPng('${h.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar</button><button class="btn btn-secondary btn-full" onclick="printHist('${h.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Imprimir</button>
         <button class="btn btn-danger btn-full" onclick="deleteHist('${h.id}')">Eliminar registro</button>
       </div>
     </div>`;
@@ -673,6 +673,40 @@ async function generateListPng(titulo,items){
   try{const canvas=await html2canvas(div,{scale:2,backgroundColor:'#ffffff'});const link=document.createElement('a');link.download=`${titulo.replace(/\s+/g,'-').toLowerCase()}.png`;link.href=canvas.toDataURL('image/png');link.click();toast('Imagen descargada ✓');}catch(e){toast('Error al generar imagen');}
   document.body.removeChild(div);
 }
+
+// ── IMPRIMIR (RawBT 58mm) ────────────────────────────────
+function printReceipt(titulo, fecha, items, total, nota){
+  const W=32;
+  let txt='';
+  txt+='       MI BODEGA\n';
+  txt+='='.repeat(W)+'\n';
+  txt+=titulo+'\n';
+  txt+=fecha+'\n';
+  txt+='-'.repeat(W)+'\n\n';
+  items.filter(i=>i.qty>0).forEach(i=>{
+    const nom=(i.nombre||'').substring(0,W-10);
+    const qty=i.qty||0;
+    const prec=(i.precio||0).toFixed(2);
+    const sub=(qty*(i.precio||0)).toFixed(2);
+    txt+=nom+'\n';
+    txt+='  '+qty.toString().padStart(3)+' x S/. '+prec.padStart(6)+'  '+sub.padStart(7)+'\n';
+  });
+  txt+='\n'+'-'.repeat(W)+'\n';
+  txt+='TOTAL'+' '.repeat(W-13)+'S/. '+total.toFixed(2)+'\n';
+  txt+='='.repeat(W)+'\n';
+  if(nota)txt+='NOTA: '+nota+'\n\n';
+  txt+='  Gracias por su visita!\n';
+  const a=document.createElement('a');
+  a.href='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8';
+  a.target='_self';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Enviando a impresora...');
+}
+function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
+function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.total||0,h.nota);}
 
 // ── REPORTES ──────────────────────────────────────────────
 let _reporteDias=30;
