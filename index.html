@@ -685,11 +685,11 @@ function printReceipt(titulo, fecha, items, nota){
   txt+=center(fecha)+NL;
   txt+='-'.repeat(W)+NL;
   items.filter(i=>i.qty>0).forEach((i,idx)=>{
-    const pv=i.precioVenta||i.precio||0;
-    const sub=(i.qty||0)*pv;
-    total+=sub;
-    const nom=(i.nombre||'').substring(0,18);
-    const line=(idx+1)+'. '+nom, price='S/. '+sub.toFixed(2);
+    const pv=i.precioVenta||0;
+    total+=(i.qty||0)*pv;
+    const nom=(i.nombre||'').substring(0,16);
+    const price='S/. '+pv.toFixed(2)+(i.unidad?' '+i.unidad.substring(0,4):'');
+    const line=(idx+1)+'. '+nom;
     txt+=line+' '.repeat(Math.max(1,W-line.length-price.length))+price+NL;
   });
   txt+='-'.repeat(W)+NL;
