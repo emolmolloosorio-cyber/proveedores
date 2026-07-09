@@ -674,55 +674,59 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (58mm · RawBT HTTP API + fallback) ────────
-function printReceipt(titulo, fecha, items, total, nota){
+// ── IMPRIMIR (58mm · imagen vía RawBT HTTP + fallback) ──
+async function printReceipt(titulo, fecha, items, total, nota){
   const W=32;
-  const NL='\r\n';
-  const center=s=>{const p=Math.max(0,W-s.length);return' '.repeat(Math.floor(p/2))+s+' '.repeat(Math.ceil(p/2));};
-  let txt='';
-  txt+=center('MI BODEGA')+NL;
-  txt+='-'.repeat(W)+NL;
-  txt+=center(titulo)+NL;
-  txt+=center(fecha)+NL;
-  txt+='-'.repeat(W)+NL;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;left:-9999px;top:0;width:390px;background:#fff;padding:28px 24px;font-family:system-ui,sans-serif;';
+  const m=s=>'<div style="text-align:center;font-weight:700;font-size:22px;color:#1a1917">'+escapeHTML(s)+'</div>';
+  const sp='<div style="text-align:center;color:#e5e4e1;margin:8px 0">'+'─'.repeat(36)+'</div>';
+  let h=m('MI BODEGA')+'<div style="text-align:center;font-size:13px;color:#888;margin-top:4px">'+escapeHTML(fecha)+'</div>'+sp+m(titulo)+sp;
   items.filter(i=>i.qty>0).forEach((i,idx)=>{
-    const nom=(i.nombre||'').substring(0,W-8);
+    const nom=escapeHTML((i.nombre||'').substring(0,24));
     const qty=i.qty||0;
     const sub=((qty*(i.precio||0))).toFixed(2);
-    txt+=(idx+1)+'. '+nom+' '.repeat(Math.max(1,W-8-nom.length-3-qty.toString().length-1))+qty+NL;
-    txt+='   '+((i.unidad||'').substring(0,14))+' '.repeat(Math.max(1,W-22))+'S/. '+sub+NL;
+    h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0efed"><div><span style="font-weight:700;font-size:15px;color:#1a1917">'+(idx+1)+'.</span> <span style="font-weight:600;font-size:15px;color:#1a1917">'+nom+'</span></div><div style="text-align:right;font-size:20px;font-weight:700;color:#1a1917;font-family:monospace">'+qty+'</div></div>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#888;padding:0 0 4px 20px"><span>'+escapeHTML(i.unidad||'')+'</span><span style="font-family:monospace">S/. '+sub+'</span></div>';
   });
-  txt+='-'.repeat(W)+NL;
-  txt+='TOTAL'+' '.repeat(Math.max(1,W-15))+'S/. '+total.toFixed(2).padStart(8)+NL;
-  txt+='-'.repeat(W)+NL;
-  if(nota)txt+='NOTA: '+nota+NL+NL;
-  txt+=center('Mi Bodega')+NL;
-  let printed=false;
-  const done=()=>{if(!printed){printed=true;toast('Impreso');}};
-  const err=()=>{if(!printed){printed=true;browserPrint();}};
-  // 1) RawBT HTTP API (port 3839)
-  fetch('http://127.0.0.1:3839/print',{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:txt}).then(done).catch(err);
-  // 2) RawBT URL protocol (fallback)
-  setTimeout(()=>{if(printed)return;try{const a=document.createElement('a');a.href='rawbt:'+encodeURIComponent(txt);a.target='_blank';a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(err,1200);}catch(e){err();}},400);
-  function browserPrint(){
-    const div=document.createElement('div');div.id='printReceipt';
-    const m=s=>'<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+s+'</span>';
-    const sp='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
-    let html=m('MI BODEGA')+sp+m(titulo)+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+fecha+'</span>'+sp;
-    items.filter(i=>i.qty>0).forEach((i,idx)=>{
-      const nom=escapeHTML((i.nombre||'').substring(0,W-8));
-      const qty=i.qty||0;
-      const sub=((qty*(i.precio||0))).toFixed(2);
-      html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+nom+'</span><span>'+qty+'</span></div>';
-      html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+sub+'</span></div>';
+  const tot=(()=>{let t=0;items.filter(i=>i.qty>0).forEach(i=>t+=i.qty*(i.precio||0));return t;})();
+  const cnt=items.filter(i=>i.qty>0).length;
+  h+=sp+'<div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:#888">'+cnt+' producto'+(cnt!==1?'s':'')+'</span><span style="font-size:20px;font-weight:700;color:#1a1917;font-family:monospace">S/. '+tot.toFixed(2)+'</span></div>';
+  if(nota)h+='<div style="font-size:12px;color:#888;padding:4px 0;border-top:1px solid #f0efed">NOTA: '+escapeHTML(nota)+'</div>';
+  h+=m('Mi Bodega');
+  div.innerHTML=h;document.body.appendChild(div);
+  try{
+    const canvas=await html2canvas(div,{scale:2,backgroundColor:'#ffffff',width:390,height:div.scrollHeight});
+    const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
+    const b64=canvas.toDataURL('image/png').split(',')[1];
+    let done=false;
+    const ok=()=>{if(!done){done=true;toast('Impreso ✓');document.body.removeChild(div);}};
+    const fail=()=>{if(!done){done=true;document.body.removeChild(div);browserPrint();}};
+    // 1) HTTP API
+    fetch('http://127.0.0.1:3839/print',{method:'POST',headers:{'Content-Type':'image/png'},body:blob}).then(ok).catch(()=>{
+      // 2) rawbt:// protocol with img
+      try{const a=document.createElement('a');a.href='rawbt://print?img='+b64;a.target='_blank';a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(fail,1500);}catch(e){fail();}
     });
-    html+=sp;html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';html+=sp;
-    if(nota)html+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
-    html+=m('Mi Bodega');
-    div.innerHTML=html;const s=document.createElement('style');
-    s.textContent='@page{margin:0;width:58mm}@media print{body{visibility:hidden}#printReceipt{visibility:visible;position:absolute;left:0;top:0;width:48mm;padding:4mm 0;font-family:monospace;font-size:10px;line-height:1.35;color:#000}}';
-    div.appendChild(s);document.body.appendChild(div);
-    setTimeout(()=>{window.print();document.body.removeChild(div);},100);
+  }catch(e){document.body.removeChild(div);toast('Error al generar imagen');}
+  function browserPrint(){
+    const d=document.createElement('div');d.id='printReceipt';
+    const ms=s=>'<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+escapeHTML(s)+'</span>';
+    const sp2='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
+    let html2=ms('MI BODEGA')+sp2+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+escapeHTML(fecha)+'</span>'+sp2+ms(titulo)+sp2;
+    items.filter(i=>i.qty>0).forEach((i,idx)=>{
+      const nom2=escapeHTML((i.nombre||'').substring(0,W-8));
+      const qty2=i.qty||0;
+      const sub2=((qty2*(i.precio||0))).toFixed(2);
+      html2+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+nom2+'</span><span>'+qty2+'</span></div>';
+      html2+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+sub2+'</span></div>';
+    });
+    html2+=sp2;html2+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+tot.toFixed(2)+'</span></div>';html2+=sp2;
+    if(nota)html2+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
+    html2+=ms('Mi Bodega');
+    d.innerHTML=html2;const ss=document.createElement('style');
+    ss.textContent='@page{margin:0;width:58mm}@media print{body{visibility:hidden}#printReceipt{visibility:visible;position:absolute;left:0;top:0;width:48mm;padding:4mm 0;font-family:monospace;font-size:10px;line-height:1.35;color:#000}}';
+    d.appendChild(ss);document.body.appendChild(d);
+    setTimeout(()=>{window.print();document.body.removeChild(d);},100);
   }
 }
 function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
