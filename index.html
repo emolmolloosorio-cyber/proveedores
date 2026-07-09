@@ -674,10 +674,9 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (58mm · texto vía RawBT) ───────────────────
+// ── IMPRIMIR (58mm · portapapeles + RawBT) ─────────────
 function printReceipt(titulo, fecha, items, total, nota){
-  const W=32;
-  const NL='\r\n';
+  const W=32,NL='\r\n';
   const center=s=>{const p=Math.max(0,W-s.length);return' '.repeat(Math.floor(p/2))+s+' '.repeat(Math.ceil(p/2));};
   let txt='';
   txt+=center('MI BODEGA')+NL;
@@ -699,30 +698,34 @@ function printReceipt(titulo, fecha, items, total, nota){
   txt+=center('Mi Bodega')+NL;
   let done=false;
   const ok=()=>{if(!done){done=true;toast('Impreso ✓');}};
-  const fail=()=>{if(!done){done=true;browserPrint();}};
+  const fail=()=>{if(!done){done=true;clipboardAndPrint();}};
   toast('Enviando a RawBT...');
-  // 1) HTTP API (text/plain)
   fetch('http://127.0.0.1:3839/print',{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:txt}).then(ok).catch(()=>{
-    // 2) rawbt:// with just the text (no parameters)
     try{
       const a=document.createElement('a');
-      a.href='rawbt://'+encodeURIComponent(txt);
+      a.href='rawbt://print?text='+encodeURIComponent(txt);
       a.target='_blank';a.rel='noopener';a.style.display='none';
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       setTimeout(fail,1500);
     }catch(e){fail();}
   });
+  function clipboardAndPrint(){
+    navigator.clipboard.writeText(txt).then(()=>{
+      toast('Texto copiado al portapapeles — pegá en RawBT');
+      setTimeout(browserPrint,2000);
+    }).catch(()=>browserPrint());
+  }
   function browserPrint(){
     const div=document.createElement('div');div.id='printReceipt';
     const ms=s=>'<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+escapeHTML(s)+'</span>';
     const sp='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
     let html=ms('MI BODEGA')+sp+ms(titulo)+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+escapeHTML(fecha)+'</span>'+sp;
     items.filter(i=>i.qty>0).forEach((i,idx)=>{
-      const nom2=escapeHTML((i.nombre||'').substring(0,W-8));
-      const qty2=i.qty||0;
-      const sub2=((qty2*(i.precio||0))).toFixed(2);
-      html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+nom2+'</span><span>'+qty2+'</span></div>';
-      html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+sub2+'</span></div>';
+      const n2=escapeHTML((i.nombre||'').substring(0,W-8));
+      const q2=i.qty||0;
+      const s2=((q2*(i.precio||0))).toFixed(2);
+      html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+n2+'</span><span>'+q2+'</span></div>';
+      html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+s2+'</span></div>';
     });
     html+=sp;html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';html+=sp;
     if(nota)html+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
