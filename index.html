@@ -676,31 +676,37 @@ async function generateListPng(titulo,items){
 
 // ── IMPRIMIR (RawBT 58mm) ────────────────────────────────
 function printReceipt(titulo, fecha, items, total, nota){
-  const W=32;
+  const W=30;
+  const NL='\r\n';
   let txt='';
-  txt+='       MI BODEGA\n';
-  txt+='='.repeat(W)+'\n';
-  txt+=titulo+'\n';
-  txt+=fecha+'\n';
-  txt+='-'.repeat(W)+'\n\n';
-  items.filter(i=>i.qty>0).forEach(i=>{
-    const nom=(i.nombre||'').substring(0,W-10);
+  const center=(s)=>s.length>=W?s:s+' '.repeat(Math.max(0,Math.floor((W-s.length)/2)));
+  txt+=center('MI BODEGA')+NL;
+  txt+='-'.repeat(W)+NL;
+  txt+=center(titulo)+NL;
+  const dia=new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+  txt+=center(dia)+NL;
+  txt+='-'.repeat(W)+NL;
+  items.filter(i=>i.qty>0).forEach((i,idx)=>{
+    const nom=(i.nombre||'').substring(0,W-6);
     const qty=i.qty||0;
     const prec=(i.precio||0).toFixed(2);
     const sub=(qty*(i.precio||0)).toFixed(2);
-    txt+=nom+'\n';
-    txt+='  '+qty.toString().padStart(3)+' x S/. '+prec.padStart(6)+'  '+sub.padStart(7)+'\n';
+    const line=(idx+1)+'. '+nom+' '.repeat(Math.max(1,W-6-nom.length))+qty.toString();
+    txt+=line+NL;
+    const line2='   '+i.unidad.substring(0,14)+' '.repeat(Math.max(1,W-24))+'S/. '+sub.padStart(8);
+    txt+=line2+NL;
   });
-  txt+='\n'+'-'.repeat(W)+'\n';
-  txt+='TOTAL'+' '.repeat(W-13)+'S/. '+total.toFixed(2)+'\n';
-  txt+='='.repeat(W)+'\n';
-  if(nota)txt+='NOTA: '+nota+'\n\n';
-  txt+='  Gracias por su visita!\n';
+  txt+='-'.repeat(W)+NL;
+  txt+='TOTAL'+' '.repeat(W-15)+'S/. '+total.toFixed(2).padStart(8)+NL;
+  txt+='-'.repeat(W)+NL;
+  if(nota)txt+='NOTA: '+nota+NL+NL;
+  txt+=center('Mi Bodega')+NL;
   try{
-    const url='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8';
+    const url='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8&cut=yes';
     const w=window.open(url,'_blank');
-    if(!w||w.closed)toast('No se pudo abrir RawBT. ¿Está instalado?');
-    else toast('Enviando a impresora...');
+    if(!w||w.closed){
+      fetch('http://127.0.0.1:3839/print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8&cut=yes').catch(()=>toast('No se pudo imprimir. ¿RawBT está instalado y corriendo?'));
+    }else{toast('Enviando a impresora...');}
   }catch(e){toast('Error al imprimir: '+e.message);}
 }
 function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
