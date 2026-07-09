@@ -696,14 +696,12 @@ function printReceipt(titulo, fecha, items, total, nota){
   txt+='='.repeat(W)+'\n';
   if(nota)txt+='NOTA: '+nota+'\n\n';
   txt+='  Gracias por su visita!\n';
-  const a=document.createElement('a');
-  a.href='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8';
-  a.target='_self';
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast('Enviando a impresora...');
+  try{
+    const url='rawbt://print?text='+encodeURIComponent(txt)+'&align=left&font=M&charset=utf-8';
+    const w=window.open(url,'_blank');
+    if(!w||w.closed)toast('No se pudo abrir RawBT. ¿Está instalado?');
+    else toast('Enviando a impresora...');
+  }catch(e){toast('Error al imprimir: '+e.message);}
 }
 function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
 function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.total||0,h.nota);}
