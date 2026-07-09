@@ -674,7 +674,7 @@ async function generateListPng(titulo,items){
   document.body.removeChild(div);
 }
 
-// ── IMPRIMIR (58mm · Share / RawBT / portapapeles) ────
+// ── IMPRIMIR (58mm · RawBT) ────────────────────────────
 function printReceipt(titulo, fecha, items, total, nota){
   const W=32,NL='\r\n';
   const center=s=>{const p=Math.max(0,W-s.length);return' '.repeat(Math.floor(p/2))+s+' '.repeat(Math.ceil(p/2));};
@@ -696,48 +696,11 @@ function printReceipt(titulo, fecha, items, total, nota){
   txt+='-'.repeat(W)+NL;
   if(nota)txt+='NOTA: '+nota+NL+NL;
   txt+=center('Mi Bodega')+NL;
-  let done=false;
-  const ok=()=>{if(!done){done=true;toast('Enviado ✓');}};
-  const next=()=>{if(!done){done=true;shareOrClipboard();}};
-  // 1) rawbt:// scheme (Android intent)
-  try{
-    const a=document.createElement('a');
-    a.href='rawbt:/'+encodeURIComponent(txt);
-    a.target='_blank';a.rel='noopener';a.style.display='none';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(next,1200);
-  }catch(e){next();}
-  function shareOrClipboard(){
-    if(navigator.share){
-      navigator.share({title:'Mi Bodega',text:txt}).then(ok).catch(()=>copyAndFallback());
-    }else{copyAndFallback();}
-  }
-  function copyAndFallback(){
-    navigator.clipboard.writeText(txt).then(()=>{
-      toast('Texto copiado — abrí RawBT y pegá');
-      setTimeout(()=>{if(!done){done=true;browserPrint();}},3000);
-    }).catch(()=>browserPrint());
-  }
-  function browserPrint(){
-    const div=document.createElement('div');div.id='printReceipt';
-    const ms=s=>'<span style="display:block;text-align:center;font-weight:700;font-size:12px">'+escapeHTML(s)+'</span>';
-    const sp='<span style="display:block;text-align:center">'+'-'.repeat(W)+'</span>';
-    let html=ms('MI BODEGA')+sp+ms(titulo)+'<span style="display:block;text-align:center;font-size:9px;color:#666">'+escapeHTML(fecha)+'</span>'+sp;
-    items.filter(i=>i.qty>0).forEach((i,idx)=>{
-      const n2=escapeHTML((i.nombre||'').substring(0,W-8));
-      const q2=i.qty||0;
-      const s2=((q2*(i.precio||0))).toFixed(2);
-      html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+(idx+1)+'. '+n2+'</span><span>'+q2+'</span></div>';
-      html+='<div style="display:flex;justify-content:space-between;font-size:9px;color:#666;padding:0 0 2px 12px"><span>'+escapeHTML(i.unidad||'')+'</span><span>S/. '+s2+'</span></div>';
-    });
-    html+=sp;html+='<div style="display:flex;justify-content:space-between;font-weight:700;padding:2px 0"><span>TOTAL</span><span>S/. '+total.toFixed(2)+'</span></div>';html+=sp;
-    if(nota)html+='<span style="display:block;font-size:9px;padding:2px 0">NOTA: '+escapeHTML(nota)+'</span>';
-    html+=ms('Mi Bodega');
-    div.innerHTML=html;const s=document.createElement('style');
-    s.textContent='@page{margin:0;width:58mm}@media print{body{visibility:hidden}#printReceipt{visibility:visible;position:absolute;left:0;top:0;width:48mm;padding:4mm 0;font-family:monospace;font-size:10px;line-height:1.35;color:#000}}';
-    div.appendChild(s);document.body.appendChild(div);
-    setTimeout(()=>{window.print();document.body.removeChild(div);},100);
-  }
+  const a=document.createElement('a');
+  a.href='rawbt://'+encodeURIComponent(txt);
+  a.target='_blank';a.rel='noopener';a.style.display='none';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  toast('Abriendo RawBT...');
 }
 function printOrder(ordId){const ord=DB.pedidos.find(x=>x.id===ordId);if(!ord)return;const prov=DB.proveedores.find(x=>x.id===ord.proveedorId);const total=calcOrderTotal(ord);const fecha=new Date(ord.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Pedido',fecha,ord.items,total);}
 function printHist(histId){const h=DB.historial.find(x=>x.id===histId);if(!h)return;const prov=DB.proveedores.find(x=>x.id===h.proveedorId);const fecha=new Date(h.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});printReceipt(prov?.nombre||'Compra',fecha,(h.items||[]).filter(i=>i.qty>0),h.total||0,h.nota);}
