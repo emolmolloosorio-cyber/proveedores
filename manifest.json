@@ -1,7 +1,7 @@
 {
-  "name": "Mi Bodega",
-  "short_name": "Mi Bodega",
-  "description": "Gestión de proveedores, pedidos y compras para tu bodega",
+  "name": "Proveedores",
+  "short_name": "Proveedores",
+  "description": "Gestión de proveedores, pedidos y compras",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
